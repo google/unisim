@@ -51,7 +51,7 @@ class TextEmbedder(Embedder):
         # avg_embeddings = B.gather_and_avg(partial_embeddings, docids)
 
         # averaging - might be faster with TF FIXME: try and benchmark
-        partial_embeddings = np.array(partial_embeddings, dtype=floatx())
+        partial_embeddings = np.asanyarray(partial_embeddings, dtype=floatx())
         avg_embeddings = []
         stacked_partial_embeddings = []  # we need those
         for idxs in docids:
@@ -59,6 +59,6 @@ class TextEmbedder(Embedder):
             avg_emb = np.sum(embs, axis=0) / len(embs)
             avg_embeddings.append(avg_emb)
             stacked_partial_embeddings.append(embs)
-        avg_embeddings = np.array(avg_embeddings, dtype=floatx())
+        avg_embeddings = np.asanyarray(avg_embeddings, dtype=floatx())
         # avg_embedding = B.average_embeddings(partial_embeddings)
         return avg_embeddings, stacked_partial_embeddings

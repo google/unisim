@@ -46,24 +46,25 @@ setup(
     author_email="unisim@google.com",
     url="https://github.com/google/unisim",
     license="Apache License 2.0",
-    install_requires=[],
+    # move to a requirements files
+    # fix the onnxruntime dependency
+    install_requires=[
+        'tabulate',
+        'numpy',
+        'tqdm'
+    ],
     extras_require={
-        "tensorflow": ["tensorflow>=2.6"],
+        "tensorflow": ["tensorflow>=2.11"],
         "dev": [
             "datasets",
             "tokenizers",
-            "tensorflow_addons",
             "google-cloud-storage",
-            "wandb",
             "mypy",
             "pytest",
             "flake8",
             "pytest-cov",
             "twine",
             "tabulate",
-            "numpy",
-            "tqdm",
-            "tensorflow_similarity",
             "black",
             "isort",
         ],

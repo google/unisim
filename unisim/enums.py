@@ -1,6 +1,12 @@
 from enum import Enum
 
 
+class BackendType(Enum):
+    unknown = 0
+    onnx = 1
+    tf = 2
+
+
 class AcceleratorType(Enum):
     unknown = 0
     cpu = 1

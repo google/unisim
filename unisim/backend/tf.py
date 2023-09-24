@@ -49,12 +49,11 @@ def knn(query: TensorEmbedding,
         targets: BatchEmbeddings,
         k: int = 5) -> Tuple[BatchIndexes, BatchDistances]:
     "perform a KNN search"
-    raise NotImplementedError('need to be vectorized')
     distances = tf.matmul(query, targets, transpose_b=True)
     # top k
     top_dists = tf.math.top_k(distances, k=k)
-    indices = tf.cast(top_dists.indices[0], dtype=tf.int64)
-    values = top_dists.values[0]
+    indices = tf.cast(top_dists.indices, dtype=tf.int64)
+    values = top_dists.values
     return indices, values
 
 

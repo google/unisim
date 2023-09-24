@@ -1,11 +1,10 @@
-from .enums import AcceleratorType
+from .enums import AcceleratorType, BackendType
 
 # internal state
 _INTX: str = 'int64'
 _FLOATX: str = 'float32'
-_BACKEND: str = ""
+_BACKEND: BackendType = BackendType.unknown
 _ACCELERATOR: AcceleratorType = AcceleratorType.unknown
-
 
 def floatx():
     """Returns the default float type, as a string.
@@ -98,12 +97,25 @@ def set_accelerator(acc: AcceleratorType):
 
 
 # backend
-def get_backend():
+
+def use_tf_backend():
+    "Force the backend to be TensorFlow"
+    global _BACKEND
+    _BACKEND = BackendType.tf
+
+
+def use_onnx_backend():
+    "Force the backend to be Onnx"
+    global _BACKEND
+    _BACKEND = BackendType.onnx
+
+
+def get_backend() -> BackendType:
     "Return the backend used"
     return _BACKEND
 
 
-def set_backend(name):
+def set_backend(backend: BackendType):
     """Set UniSim backend to a given framework
 
     Args:
@@ -116,4 +128,4 @@ def set_backend(name):
         `load_backend.py` for the actual loading code.
     """
     global _BACKEND
-    _BACKEND = name
+    _BACKEND = backend

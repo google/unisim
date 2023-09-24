@@ -1,57 +1,77 @@
 import numpy as np
-from .enums import ModalityType, IndexerType
-from .dataclass import Result, Similarity, PartialMatch
-from .config import floatx
+
 from . import backend as B
 from .embedder import Embedder, TextEmbedder
+from .indexer import Indexer
+from .enums import ModalityType, IndexerType
+from .dataclass import Result, Similarity, Match
+
 from .types import GlobalEmbedding, PartialEmbeddings
 from .types import BatchGlobalEmbeddings, BatchPartialEmbeddings
-from typing import Sequence, Any, Tuple
+from typing import Sequence, Any, Tuple, Dict
 
 
 # put that as an abstract class
 class Modality(object):
     """Wrapper class that allows to manipulate various data modality in a
     generic way using various type of indexer.
-    """
 
-    embedder: Embedder
+    Always use: np.asanyarray() when making sure everything is properly casted.
+    Don't use np.array or np.asarray()
+    """
 
     def __init__(self,
                  global_threshold: float,
                  partial_threshold: float,
                  modality: ModalityType,
                  model_version: int,
+                 indexer_type: IndexerType,
+                 indexer_params: Dict,
+                 use_tf_knn: bool,
+                 store_data: bool,
                  verbose: int = 0) -> None:
 
+        # model
         self.modality = modality
         self.model_version = model_version
         self.global_threshold = global_threshold
         self.partial_threshold = partial_threshold
+
+        # indexes
+        self.index_idxs = 0  # track idxs as we have two indexers
+        self.indexer_type = indexer_type
+        self.indexer_params = indexer_params
+        self.use_tf_knn = use_tf_knn
+        self.store_data = store_data
+
+        # internal state
+        self.is_initialized: bool = False
         self.verbose = verbose
+        self.indexed_data = []
 
-        # fixme
-        # self.index
-        # FIXME: rename to initalized to also init the indexer
-        self.embedding_size = 0
-        self.chunk_size = 0
-        self.embeder_initialized = False
-
-    # FIXME move to initialize to also do indexers - global and partial
-    def _load_model(self):
-        "Load needed model on demand"
+    def _lazy_init(self):
+        "Lazily init models and indexers"
         # don't initialize twice
-        if self.embeder_initialized:
+        if self.is_initialized:
             return
 
+        # embedder
         if self.modality == ModalityType.text:
             self.embedder = TextEmbedder(version=self.model_version,
                                          verbose=self.verbose)
             self.embedding_size = self.embedder.embdding_size
-            self.chunk_size = self.embedder.chunk_size
+            self.partial_size = self.embedder.chunk_size
         else:
             raise ValueError(f'Unknown modality: {self.modality}')
-        self.embeder_initialized = True
+
+        # indexer
+        self.indexer = Indexer(embedding_size=self.embedding_size,
+                               use_tf_knn=self.use_tf_knn,
+                               index_type=self.indexer_type,
+                               global_threshold=self.global_threshold,
+                               partial_threshold=self.partial_threshold,
+                               params=self.indexer_params)
+        self.is_initialized = True
 
     # direct embedding manipulation
     def embed(self, input) -> Tuple[GlobalEmbedding, PartialEmbeddings]:
@@ -62,10 +82,9 @@ class Modality(object):
     def batch_embed(self,
                     inputs: Sequence[Any]) -> Tuple[BatchGlobalEmbeddings,
                                                     BatchPartialEmbeddings]:
-        self._load_model()  # lazy loading model
-
-        global_embeddings, partial_embeddings = self.embedder.batch_compute_embeddings(inputs)
-        return global_embeddings, partial_embeddings
+        self._lazy_init()
+        ges, pes = self.embedder.batch_compute_embeddings(inputs)
+        return ges, pes
 
     # fixme: return a match or similarity object
     def similarity(self, input1, input2) -> Similarity:
@@ -76,43 +95,89 @@ class Modality(object):
 
         # global distance
         global_distances = B.cosine_similarity(ge, ge)
+        global_distances = np.asanyarray(global_distances)
 
         # init similarity dataclass
         simres = Similarity(
-            query_embedding=np.array(ge[0]),
-            target_embedding=np.array(ge[1]),
+            query_embedding=ge[0],
+            target_embedding=ge[1],
             distance=float(global_distances[0][1])  # we don't want the diag
         )
 
         # is it a match
         if simres.distance >= self.global_threshold:
-            simres.is_near_duplicate = True
-            simres.is_match = True
+            simres.is_global_match = True
 
         # partial matches
         partial_distances = B.cosine_similarity(pe[0], pe[1])
 
         # FIXME use GPU acceleration if possible]
-        partial_distances = np.array(partial_distances)
+        partial_distances = np.asanyarray(partial_distances)
         for idx1, chunk_distances in enumerate(partial_distances):
             idx2 = np.argmax(chunk_distances)
             dist = chunk_distances[idx2]
-            pmatch = PartialMatch(
-                distance=float(dist),
-                match_len=self.chunk_size,
-                target_idx=0,
-                target_chunk_idx=idx2,
-                target_match_position=(idx2 + 1) * self.chunk_size,
-                query_match_position=(idx1 + 1) * self.chunk_size)
+            pmatch = Match(
+                idx=0,
+                global_rank=1,
+                global_similarity=float(dist),
+                match_len=self.partial_size,
+                target_match_position=(idx2 + 1) * self.partial_size,
+                query_match_position=(idx1 + 1) * self.partial_size)
             if dist > self.partial_threshold:
                 pmatch.is_partial_match = True
                 simres.is_partial_match = True
             simres.partial_matches.append(pmatch)
         return simres
 
+    # indexing
+    def index(self, input) -> int:
+        inputs = [input]
+        res = self.batch_index(inputs=inputs)
+        return res[0]
+
+    def batch_index(self, inputs) -> Sequence[int]:
+        ges, bpes = self.batch_embed(inputs)
+
+        # compute the new global idxs
+        ges_idxs = [i + self.index_idxs for i in range(len(ges))]
+        self.index_idxs += len(ges_idxs)
+
+        # flatten partial embeddings and maps them to global idxs
+        fpes, pes_idxs = self._flatten_partial_embeddings(bpes, ges_idxs)
+
+        # indexing global and partials
+        self.indexer.batch_index(ges, ges_idxs, fpes, pes_idxs)
+
+        # store inputs if requested
+        if self.store_data:
+            self.indexed_data.extend(inputs)
+
+        return ges_idxs
+
     # direct search
-    def search(self, input, k: int = 5) -> Sequence[Result]:
+    def search(self, input, k: int = 5):
         raise NotImplementedError
+
+    def batch_search(self, inputs,
+                     gk: int = 5, pk: int = 5):
+
+        gqe, pqe = self.batch_embed(inputs)
+
+        fpqe, _ = self._flatten_partial_embeddings(pqe)
+
+        results = self.indexer.batch_query(global_query_embeddings=gqe,
+                                           partial_query_embeddings=fpqe,
+                                           gk=gk, pk=pk,
+                                           return_data=self.store_data,
+                                           queries=inputs,
+                                           data=self.indexed_data)
+        return results
+
+    def reset_index(self):
+        self._lazy_init()
+        self.index_idxs = 0
+        self.indexer.reset()
+        self.indexed_data = []
 
     def match(self, input) -> Result:
         raise NotImplementedError
@@ -120,3 +185,23 @@ class Modality(object):
     # dedup
     def dedup(self, inputs: Sequence[Any]):
         raise NotImplementedError
+
+    # persistence
+    def save(self, filepath):
+        # ! DON't FORGET TO save inputs or move it to rockdb
+        raise NotImplementedError
+
+    def load(self, filepath):
+        raise NotImplementedError
+
+    def _flatten_partial_embeddings(self, batch_partial_embeddings,
+                                    ges_idxs: Sequence[int] = []):
+        "Flatten partial embeddings and remap idxs to global ones"
+        flatten_pes = []
+        pes_idxs = []
+        for idx, pes in enumerate(batch_partial_embeddings):
+            for pe in pes:
+                flatten_pes.append(pe)
+                if ges_idxs:
+                    pes_idxs.append(ges_idxs[idx])
+        return np.asanyarray(flatten_pes), pes_idxs
