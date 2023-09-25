@@ -47,7 +47,7 @@ if backend != BackendType.unknown:
 elif accel == AcceleratorType.cpu:
     # on CPU always onnx
     set_backend(BackendType.onnx)
-elif tf:
+elif TF_AVAILABLE:
     # potentially revisit
     set_backend(BackendType.tf)
 else:
