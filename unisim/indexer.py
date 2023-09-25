@@ -6,7 +6,8 @@ from .config import get_accelerator, get_backend
 from .enums import AcceleratorType, BackendType, IndexerType
 from .dataclass import Result, Match
 from . import backend as B
-
+# we might want to use it with ONNX - consider moving it in a different file?
+from .backend.tf import knn as tfknn
 from typing import Sequence, Dict, Any
 
 
@@ -98,12 +99,12 @@ class Indexer():
             # might barf and might need to move to concat
             self.global_embeddings = np.asanyarray(self.global_embeddings)
             self.partial_embeddings = np.asanyarray(self.partial_embeddings)
-            print('gk', gk, 'pk', pk)
+            # print('gk', gk, 'pk', pk)
             # print(self.global_embeddings.shape)
             # print(global_query_embeddings.shape)
 
             # global matches
-            gidxs, gdists = B.knn(global_query_embeddings,
+            gidxs, gdists = tfknn(global_query_embeddings,
                                   self.global_embeddings,
                                   k=gk)
 
@@ -118,7 +119,7 @@ class Indexer():
                 gmatches_batch.append(matches)
 
             # partial matches
-            pidxs, pdists = B.knn(partial_query_embeddings,
+            pidxs, pdists = tfknn(partial_query_embeddings,
                                   self.partial_embeddings,
                                   k=pk)
             pidxs = np.asanyarray(pidxs)

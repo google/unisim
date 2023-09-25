@@ -1,5 +1,6 @@
 import numpy as np
 from pathlib import Path
+import onnxruntime as rt
 from onnxruntime import InferenceSession
 
 # typing
@@ -43,7 +44,14 @@ def load_model(path: Path, verbose: int = 0):
     if verbose:
         print(f"|-model path: {mpath}")
 
-    sess = InferenceSession(mpath, providers=_providers)
+    # not working on max
+    # options = rt.SessionOptions()
+    # options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_ALL
+    # options.sess_options.intra_op_num_threads = 0  # auto?
+
+    sess = InferenceSession(mpath,
+                            # sess_options=options,
+                            providers=_providers)
     model = {
         "sess": sess,
         # getting input/output info dynamically
@@ -64,4 +72,5 @@ def load_model(path: Path, verbose: int = 0):
 def predict(model, batch) -> BatchEmbeddings:
     out = model['sess'].run([model['output_name']],
                             {model['input_name']: batch})
-    return out
+
+    return np.asanyarray(out[0])  # first output

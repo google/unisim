@@ -10,6 +10,6 @@ from ..config import set_intx  # noqa: F40
 # from .load_backend import average_embeddings
 # from .load_backend import gather_and_avg
 from .load_backend import cosine_similarity
-from .load_backend import knn
+# from .load_backend import knn
 from .load_backend import load_model
 from .load_backend import predict

@@ -9,7 +9,7 @@ from ..types import BatchDistances, BatchDistances2D, BatchIndexes
 from typing import Tuple
 
 
-# @tf.function(jit_compile=True)
+@tf.function(jit_compile=True)
 def avg_vects(embeddings: BatchEmbeddings) -> BatchGlobalEmbeddings:
     num_embs = tf.cast(tf.shape(embeddings)[0], dtype=embeddings.dtype)
     return tf.reduce_sum(embeddings) / num_embs
@@ -29,7 +29,7 @@ def avg_vects(embeddings: BatchEmbeddings) -> BatchGlobalEmbeddings:
 #     return tf.reduce_sum(embeddings, axis=axis) / tf.shape(embeddings)[axis]
 
 
-# @tf.function(jit_compile=True)
+@tf.function(jit_compile=True)
 def cosine_similarity(query_embeddings: BatchEmbeddings,
                       index_embeddings: BatchEmbeddings) -> BatchDistances2D:
     """Compute cosine similarity between embeddings
@@ -44,7 +44,7 @@ def cosine_similarity(query_embeddings: BatchEmbeddings,
     return tf.matmul(query_embeddings, index_embeddings, transpose_b=True)
 
 
-# @tf.function(jit_compile=True)
+@tf.function(jit_compile=True)
 def knn(query: TensorEmbedding,
         targets: BatchEmbeddings,
         k: int = 5) -> Tuple[BatchIndexes, BatchDistances]:
@@ -69,5 +69,6 @@ def load_model(path: Path, verbose: int = 0):
     return model
 
 
+@tf.function(jit_compile=True)
 def predict(model, batch) -> BatchEmbeddings:
     return model(batch, training=False)

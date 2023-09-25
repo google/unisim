@@ -1,4 +1,5 @@
 import numpy as np
+from perfcounters import PerfCounters
 
 from . import backend as B
 from .embedder import Embedder, TextEmbedder
@@ -80,10 +81,12 @@ class Modality(object):
         return ge[0], pe[0]
 
     def batch_embed(self,
-                    inputs: Sequence[Any]) -> Tuple[BatchGlobalEmbeddings,
-                                                    BatchPartialEmbeddings]:
+                    inputs: Sequence[Any],
+                    verbose: int = 0) -> Tuple[BatchGlobalEmbeddings,
+                                               BatchPartialEmbeddings]:
         self._lazy_init()
-        ges, pes = self.embedder.batch_compute_embeddings(inputs)
+        ges, pes = self.embedder.batch_compute_embeddings(inputs,
+                                                          verbose=verbose)
         return ges, pes
 
     # fixme: return a match or similarity object
@@ -135,23 +138,38 @@ class Modality(object):
         res = self.batch_index(inputs=inputs)
         return res[0]
 
-    def batch_index(self, inputs) -> Sequence[int]:
-        ges, bpes = self.batch_embed(inputs)
+    def batch_index(self, inputs, verbose: int = 0) -> Sequence[int]:
+        cnts = PerfCounters()
+        cnts.start('total')
+
+        cnts.start('batch_embed')
+        ges, bpes = self.batch_embed(inputs, verbose=verbose)
+        cnts.stop('batch_embed')
 
         # compute the new global idxs
+        cnts.start('compute_global_idxs')
         ges_idxs = [i + self.index_idxs for i in range(len(ges))]
         self.index_idxs += len(ges_idxs)
+        cnts.stop('compute_global_idxs')
 
         # flatten partial embeddings and maps them to global idxs
+        cnts.start('flatten_partial_embeddings')
         fpes, pes_idxs = self._flatten_partial_embeddings(bpes, ges_idxs)
+        cnts.stop('flatten_partial_embeddings')
 
         # indexing global and partials
+        cnts.start('batch_index')
         self.indexer.batch_index(ges, ges_idxs, fpes, pes_idxs)
+        cnts.stop('batch_index')
 
         # store inputs if requested
         if self.store_data:
+            cnts.start('store_data')
             self.indexed_data.extend(inputs)
-
+            cnts.stop('store_data')
+        cnts.stop('total')
+        if verbose:
+            cnts.report()
         return ges_idxs
 
     # direct search
