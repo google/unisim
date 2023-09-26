@@ -22,6 +22,7 @@ class Modality(object):
     """
 
     def __init__(self,
+                 batch_size: int,
                  global_threshold: float,
                  partial_threshold: float,
                  modality: ModalityType,
@@ -33,6 +34,7 @@ class Modality(object):
                  verbose: int = 0) -> None:
 
         # model
+        self.batch_size = batch_size
         self.modality = modality
         self.model_version = model_version
         self.global_threshold = global_threshold
@@ -58,7 +60,8 @@ class Modality(object):
 
         # embedder
         if self.modality == ModalityType.text:
-            self.embedder = TextEmbedder(version=self.model_version,
+            self.embedder = TextEmbedder(batch_size=self.batch_size,
+                                         version=self.model_version,
                                          verbose=self.verbose)
             self.embedding_size = self.embedder.embdding_size
             self.partial_size = self.embedder.chunk_size

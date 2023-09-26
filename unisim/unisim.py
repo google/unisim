@@ -21,6 +21,8 @@ class UniSim(ABC):
                  index_type: IndexerType,
                  indexer_params: Dict,
                  store_data: bool,
+                 # Potentially use a diff batchsize by modality
+                 batch_size: int = 128,
                  text_global_threshold: float = 0.9,
                  text_partial_threshold: float = 0.9,
                  text_model_version: int = 1,
@@ -28,9 +30,11 @@ class UniSim(ABC):
                  verbose: int = 0) -> None:
 
         super().__init__()
+        self.batch_size = batch_size
         self.verbose = verbose
         self.index_type = index_type
         self.store_data = store_data
+
         if self.store_data:
             print("UniSim is storing a copy of the indexed data")
             print("if you are using large data corpus consider disable this behavior using store_data=False")
@@ -55,7 +59,8 @@ class UniSim(ABC):
         self.viz = Visualization()
 
         # Initalizing the models/embedders
-        self.text = Modality(global_threshold=text_global_threshold,
+        self.text = Modality(batch_size=batch_size,
+                             global_threshold=text_global_threshold,
                              partial_threshold=text_partial_threshold,
                              modality=ModalityType.text,
                              model_version=text_model_version,
@@ -67,6 +72,8 @@ class UniSim(ABC):
 
     def info(self):
         # FIXME more information e.g backend gpu etc
+        print(f'[Embedder]')
+        print(f'|-batch_size:{self.batch_size}')
         print("[Indexer]")
         print(f'|-is_exact:{self.use_exact}')
         print(f'|-use_tf_knn:{self.use_tf_knn}')
@@ -83,6 +90,7 @@ class ExactUniSim(UniSim):
 
     """
     def __init__(self,
+                 batch_size: int = 128,
                  store_data: bool = True,
                  text_global_threshold: float = 0.9,
                  text_partial_threshold: float = 0.9,
@@ -90,7 +98,8 @@ class ExactUniSim(UniSim):
                  use_tf_knn: bool = False,
                  verbose: int = 0) -> None:
 
-        super().__init__(IndexerType.exact,
+        super().__init__(batch_size=batch_size,
+                         index_type=IndexerType.exact,
                          indexer_params={},
                          store_data=store_data,
                          use_tf_knn=use_tf_knn,
@@ -107,6 +116,7 @@ class ApproxUniSim(UniSim):
 
     """
     def __init__(self,
+                 batch_size: int = 128,
                  store_data: bool = False,
                  text_global_threshold: float = 0.9,
                  text_partial_threshold: float = 0.9,
@@ -114,7 +124,9 @@ class ApproxUniSim(UniSim):
                  use_tf_knn: bool = False,
                  verbose: int = 0) -> None:
         # FIXME: wire indexer params
-        super().__init__(IndexerType.approx,
+
+        super().__init__(batch_size=batch_size,
+                         index_type=IndexerType.approx,
                          indexer_params={},
                          store_data=store_data,
                          use_tf_knn=use_tf_knn,

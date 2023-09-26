@@ -1,3 +1,4 @@
+import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -12,8 +13,12 @@ from ..types import BatchPartialEmbeddings, BatchEmbeddings
 class Embedder(ABC):
     "Convert inputs to embeddings suitable for indexing"
 
-    def __init__(self, modality: str, model_version: int,
+    def __init__(self,
+                 batch_size: int,
+                 modality: str,
+                 model_version: int,
                  verbose: int = 0) -> None:
+        self.batch_size = batch_size
         self.modality = modality
         self.model_version = model_version
         self.model_fname = f'unisim_{modality}_v{model_version}'
@@ -26,6 +31,7 @@ class Embedder(ABC):
         # load model
         if verbose:
             print('[Loading model]')
+            print(f'|-batch_size:{batch_size}')
             print(f'|-modality:{modality}')
             print(f'|-version:{model_version}')
 
@@ -46,6 +52,12 @@ class Embedder(ABC):
         """
         raise NotImplementedError
 
-    def predict(self, batch) -> BatchEmbeddings:
+    def predict(self, data) -> BatchEmbeddings:
         "Run inference using the loaded model with the right framework"
-        return B.predict(self.model, batch=batch)
+        embeddings = []
+        for idx in range(0, len(data), self.batch_size):
+            batch = data[idx:idx+self.batch_size]
+            batch_embs = B.predict(self.model, batch=batch)
+            embeddings.extend(batch_embs)
+        embeddings = np.asanyarray(embeddings)
+        return embeddings

@@ -16,10 +16,14 @@ class TextEmbedder(Embedder):
     Use RetSim model to convert text to embeddings
     """
 
-    def __init__(self, version: int = 1,
+    def __init__(self,
+                 batch_size: int = 128,
+                 version: int = 1,
                  verbose: int = 0) -> None:
         # model loading is handled in the super
-        super().__init__(modality='text', model_version=version,
+        super().__init__(batch_size=batch_size,
+                         modality='text',
+                         model_version=version,
                          verbose=verbose)
         # set constanstant
         self.chunk_size = 512
@@ -49,11 +53,16 @@ class TextEmbedder(Embedder):
         cnts.start('binarizer')
         batch, docids = binarizer(inputs, chunk_size=self.chunk_size)
         cnts.stop('binarizer')
-
+        # print(batch.shape, batch.dtype)
         # batch: [num_flatten_chunks, 24]  docids for each chunks
         cnts.start('predict')
+        # print(batch.shape)
         partial_embeddings = self.predict(batch)
         cnts.stop('predict')
+        # print(partial_embeddings.shape)
+        # print('docids', docids)
+        # for idx, e in enumerate(partial_embeddings):
+        #    print('pe', idx, e[:10], np.sum(e), np.mean(e))
 
         # [num_flatten_chunk, 256]
         # gather_avg don't work as it is irregular shape (different len)

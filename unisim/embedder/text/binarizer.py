@@ -7,12 +7,12 @@ from typing import Sequence, AnyStr
 PAD = [0.0] * 24
 
 
-@cache
-def tobin(codepoint: int) -> Sequence[float]:
-    # 24bits representation
-    # 24 bits + 2byes for 0b at the begining = #026b
-    v = format(codepoint, '#026b')
-    return [float(b) for b in v[2:]]
+# @cache
+# def tobin(codepoint: int) -> Sequence[float]:
+#     # 24bits representation
+#     # 24 bits + 2byes for 0b at the begining = #026b
+#     v = format(codepoint, '#026b')
+#     return [float(b) for b in v[2:]]
 
 
 @cache
@@ -46,17 +46,21 @@ def binarize_str(txt: AnyStr, docid: int, chunk_size: int = 512):
 def binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
 
     inputs = []
-    docids = []
+    chunk_ids = []
+    chunk_ids_cursor = 0
     for docid, txt in enumerate(txts):
         arr, num_chunks, docid = binarize_str(txt=txt,
                                               docid=docid,
                                               chunk_size=chunk_size)
         inputs.extend(arr)
-        docids.append([docid] * num_chunks)
+        current_chunks_ids = np.arange(chunk_ids_cursor,
+                                       chunk_ids_cursor + num_chunks)
+        chunk_ids.append(current_chunks_ids)
+        chunk_ids_cursor += num_chunks
 
     # stack
     inputs = np.stack(inputs, axis=0)
-    return inputs, docids
+    return inputs, chunk_ids
 
 
 def multi_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):

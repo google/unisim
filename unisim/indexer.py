@@ -30,6 +30,8 @@ class Indexer():
         # multiple embeddings (partial_embeddings) can be long to same idxs
         self.global_idxs = []
         self.partial_idx_2_global_idx = []
+        # each partial needs a unique keys so we track that
+        self.usearch_pkeys_count = 0
 
         # determine what type of index we want
         self.is_gpu = True if get_accelerator() == AcceleratorType.gpu else False  # noqa
@@ -77,7 +79,10 @@ class Indexer():
         else:
             gkeys = np.asanyarray(global_idxs)
             gvects = np.asanyarray(global_embeddings)
-            pkeys = np.asanyarray(partial_idxs)
+            pkeys = np.arange(self.usearch_pkeys_count,
+                              self.usearch_pkeys_count + len(partial_idxs))
+            self.usearch_pkeys_count += len(partial_idxs)  # move internal cursor
+
             pvects = np.asanyarray(partial_embeddings)
 
             self.global_index.add(gkeys, gvects)
@@ -136,7 +141,6 @@ class Indexer():
             # Using Usearch
             # note usearch needs count to be < len(embeddings)
 
-            raise ValueError('usearch exact is broken - refusing to compute')
             # make sure we have contigious np.arrays
             self.global_embeddings = np.asanyarray(self.global_embeddings)
             self.partial_embeddings = np.asanyarray(self.partial_embeddings)
@@ -182,7 +186,6 @@ class Indexer():
         results_map: Dict[str, Result] = {}
         matches_map: Dict[str, Dict[str, Match]] = defaultdict(dict)
         for query_idx, gmatches in enumerate(gmatches_batch):
-
             result = Result(query_idx=query_idx)
             if return_data:
                 result.query = queries[query_idx]
@@ -210,27 +213,31 @@ class Indexer():
             results_map[result.query_idx] = result
 
         # partial match
-        for partial_idx, pmatches in enumerate(pmatches_batch):
-            query_idx = self.partial_idx_2_global_idx[partial_idx]
+        for query_idx, pmatches in enumerate(pmatches_batch):
+            # query_idx = self.partial_idx_2_global_idx[partial_idx]
+            result = results_map[query_idx]
 
             # there is already a global match
-            if query_idx in results_map:
-                result = results_map[query_idx]
-            else:
-                # no global match
-                result = Result(query_idx=query_idx)
-                if return_data:
-                    result.query = queries[query_idx]
-                results_map[query_idx] = result
+            # if query_idx in results_map:
+            #     result = results_map[query_idx]
+            # else:
+            #     # no global match
+            #     result = Result(query_idx=query_idx)
+            #     if return_data:
+            #         result.query = queries[query_idx]
+            #     results_map[query_idx] = result
 
             for rank, m in enumerate(pmatches):
+                # if query_idx == 2:
+                #     print(query_idx, m.key, 1 - m.distance)
                 target_idx = self.partial_idx_2_global_idx[m.key]
                 similarity = 1 - m.distance
 
                 if result.query_idx in matches_map and target_idx in matches_map[result.query_idx]:
                     # if exist update
+
                     match = matches_map[result.query_idx][target_idx]
-                    match.partial_rank = partial_idx
+                    match.partial_rank = rank
                     match.partial_similarity = similarity
 
                 else:
@@ -269,6 +276,7 @@ class Indexer():
 
         self.global_idxs = []
         self.partial_idx_2_global_idx = []
+        self.usearch_pkeys_count = 0
 
     def info(self):
         print("[Indexer info]")
