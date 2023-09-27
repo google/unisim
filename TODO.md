@@ -1,6 +1,7 @@
 # TODO
 
 
+
 Don't use np.array or np.asarray - use instead `asanyarray`
 see: https://stackoverflow.com/questions/56805126/is-there-a-significant-overhead-in-calling-np-asarray-on-a-numpy-array
 
@@ -22,11 +23,10 @@ see: https://stackoverflow.com/questions/56805126/is-there-a-significant-overhea
 
 ### tokenizer
 - Add remove whitespace / keep stuff()
-- try to cache the np.array in tobin() see if we can make the tokenizer even faster - (alternative C)
-- do thread computation
+- add lowercasing
 - add tqdm
+### to test
 - add a cache for words?
-- support lowercasing
 - C
 
 ### gather

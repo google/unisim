@@ -24,7 +24,7 @@ class UniSim(ABC):
                  # Potentially use a diff batchsize by modality
                  batch_size: int = 128,
                  text_global_threshold: float = 0.9,
-                 text_partial_threshold: float = 0.9,
+                 text_partial_threshold: float = 0.85,
                  text_model_version: int = 1,
                  use_tf_knn: bool = False,
                  verbose: int = 0) -> None:
@@ -93,7 +93,7 @@ class ExactUniSim(UniSim):
                  batch_size: int = 128,
                  store_data: bool = True,
                  text_global_threshold: float = 0.9,
-                 text_partial_threshold: float = 0.9,
+                 text_partial_threshold: float = 0.85,
                  text_model_version: int = 1,
                  use_tf_knn: bool = False,
                  verbose: int = 0) -> None:
@@ -119,7 +119,7 @@ class ApproxUniSim(UniSim):
                  batch_size: int = 128,
                  store_data: bool = False,
                  text_global_threshold: float = 0.9,
-                 text_partial_threshold: float = 0.9,
+                 text_partial_threshold: float = 0.85,
                  text_model_version: int = 1,
                  use_tf_knn: bool = False,
                  verbose: int = 0) -> None:

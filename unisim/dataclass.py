@@ -37,6 +37,8 @@ class Result:
     num_partial_matches: int = 0
     matches: List[Match] = dc.field(default_factory=lambda: [])
 
+# fixme Result collection with export to pandas
+
 
 @dc.dataclass
 class Similarity:

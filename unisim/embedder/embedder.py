@@ -1,3 +1,4 @@
+from tqdm.auto import tqdm
 import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
@@ -55,9 +56,14 @@ class Embedder(ABC):
     def predict(self, data) -> BatchEmbeddings:
         "Run inference using the loaded model with the right framework"
         embeddings = []
+        dlen = len(data)
+        pb = tqdm(total=dlen, desc="Computing partial embeddings",
+                  unit='embeddings')
         for idx in range(0, len(data), self.batch_size):
             batch = data[idx:idx+self.batch_size]
             batch_embs = B.predict(self.model, batch=batch)
             embeddings.extend(batch_embs)
+            pb.update(batch_embs.shape[0])
         embeddings = np.asanyarray(embeddings)
+        pb.close()
         return embeddings

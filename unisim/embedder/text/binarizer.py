@@ -16,25 +16,49 @@ PAD = [0.0] * 24
 
 
 @cache
-def char2bin(chr) -> Sequence[float]:
+def char2bin(chr: str) -> Sequence[float]:
     cp = ord(chr)
     v = format(cp, '#026b')
     return [float(b) for b in v[2:]]
 
 
-def binarize_str(txt: AnyStr, docid: int, chunk_size: int = 512):
-    if isinstance(txt, str):
-        mstr = txt
-    else:
-        mstr = str(txt)
+@cache
+def token2bin(word: str) -> Sequence[float]:
+    "convert a word "
+    return [char2bin(c) for c in word]
+
+
+def binarize_str(txt: AnyStr, docid: int, chunk_size: int = 512,
+                 cleanup: bool = True, lowercase: bool = False,
+                 last_chunk_min_size: int = 16):
+
+    if lowercase:
+        txt = txt.lower()
 
     # binarize
-    bins = [char2bin(c) for c in mstr]
+    if cleanup:
+        # note: we use token2bin because we hope to leverage caching per token
+        words = txt.split()
+        bins = []
+        for w in words:
+            bins.extend(token2bin(w))
+    else:
+        bins = [char2bin(c) for c in txt]
 
-    # padding
-    pad_len = chunk_size - len(bins) % chunk_size
-    padding = [PAD for _ in range(pad_len)]
-    bins.extend(padding)
+    # remove last chunk if too small
+    lbin = len(bins)
+    last_chunk_size = lbin % chunk_size
+
+    # deal with last chunk
+    if lbin > chunk_size and last_chunk_size <= last_chunk_min_size:
+        # if too small truncate
+        if last_chunk_size:  # avoid doing it if by change perfect cut
+            bins = bins[:lbin-last_chunk_size]
+    else:
+        # else pad
+        pad_len = chunk_size - len(bins) % chunk_size
+        padding = [PAD for _ in range(pad_len)]
+        bins.extend(padding)
 
     # arrayifying and reshaping
     arr = np.array(bins, dtype='float32')
@@ -43,7 +67,9 @@ def binarize_str(txt: AnyStr, docid: int, chunk_size: int = 512):
     return arr, num_chunks, docid
 
 
-def binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
+def binarizer(txts: Sequence[AnyStr],
+              chunk_size: int = 512,
+              last_chunk_min_size: int = 16):
 
     inputs = []
     chunk_ids = []
@@ -51,7 +77,8 @@ def binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
     for docid, txt in enumerate(txts):
         arr, num_chunks, docid = binarize_str(txt=txt,
                                               docid=docid,
-                                              chunk_size=chunk_size)
+                                              chunk_size=chunk_size,
+                                              last_chunk_min_size=last_chunk_min_size)  # noqa
         inputs.extend(arr)
         current_chunks_ids = np.arange(chunk_ids_cursor,
                                        chunk_ids_cursor + num_chunks)

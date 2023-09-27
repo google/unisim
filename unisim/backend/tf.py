@@ -69,11 +69,7 @@ def load_model(path: Path, verbose: int = 0):
     return model
 
 
-@tf.function(jit_compile=True)
-def predict(model, batch, batch_size: int = 0) -> BatchEmbeddings:
+@tf.function()  # jit_compile=True)
+def predict(model, batch) -> BatchEmbeddings:
     # add strategy here
-    # add batchsize here
-    # if batch_size:
-        # tf.reshape(batch, (batch_size, ....))
-
     return model(batch, training=False)

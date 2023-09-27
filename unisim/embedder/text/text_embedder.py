@@ -47,7 +47,7 @@ class TextEmbedder(Embedder):
             Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]: _description_
         """
         cnts = PerfCounters()
-        cnts.start('compute_embeddings_total')
+        cnts.start('total')
 
         # inputs: [text1, text2, text3]
         cnts.start('binarizer')
@@ -81,7 +81,7 @@ class TextEmbedder(Embedder):
         avg_embeddings = np.asanyarray(avg_embeddings, dtype=floatx())
         # avg_embedding = B.average_embeddings(partial_embeddings)
         cnts.stop('averaging')
-        cnts.stop('compute_embeddings_total')
+        cnts.stop('total')
 
         if verbose:
             cnts.report()
