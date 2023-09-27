@@ -25,6 +25,7 @@ def char2bin(chr: str) -> Sequence[float]:
 @cache
 def token2bin(word: str) -> Sequence[float]:
     "convert a word "
+    word += " "
     return [char2bin(c) for c in word]
 
 

@@ -13,6 +13,9 @@ class Match:
     global_rank: int | None = None
     global_similarity: float | None = None
 
+    # todo we need to count num partials
+    # num chunk
+    # give partial match ratio
     # todo move to partial map @ovallis
     partial_rank: int | None = None
     partial_similarity: float | None = None
@@ -37,7 +40,19 @@ class Result:
     num_partial_matches: int = 0
     matches: List[Match] = dc.field(default_factory=lambda: [])
 
-# fixme Result collection with export to pandas
+
+@dc.dataclass
+class ResultCollection:
+    total_global_matches: int = 0
+    total_partial_matches: int = 0
+    results: List[Result] = dc.field(default_factory=lambda: [])
+
+    def __repr__(self) -> str:
+        res = "-[Results statistics]-"
+        res = f"Results: {len(self.results)}\n"
+        res += f'Global Match: {self.total_global_matches}\n'
+        res += f'Partial Match: {self.total_partial_matches}'
+        return res
 
 
 @dc.dataclass

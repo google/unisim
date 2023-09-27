@@ -4,7 +4,7 @@ from usearch.index import search, Index, MetricKind
 from usearch.index import Match as UMatch
 from .config import get_accelerator, get_backend
 from .enums import AcceleratorType, BackendType, IndexerType
-from .dataclass import Result, Match
+from .dataclass import ResultCollection, Result, Match
 from . import backend as B
 # we might want to use it with ONNX - consider moving it in a different file?
 from .backend.tf import knn as tfknn
@@ -94,7 +94,7 @@ class Indexer():
                     gk: int, pk: int,
                     return_data: bool,
                     queries: Sequence[Any],
-                    data: Sequence[Any] = []):
+                    data: Sequence[Any] = []) -> ResultCollection:
 
         if return_data and not data:
             raise ValueError("Can't return data, data is empty")
@@ -259,12 +259,14 @@ class Indexer():
             results_map[result.query_idx] = result
 
         # build as a list
-        results = []
+        results_collection = ResultCollection()
         for result in results_map.values():
             matches = [m for m in matches_map[result.query_idx].values()]
             result.matches = matches
-            results.append(result)
-        return results
+            results_collection.total_global_matches += result.num_global_matches  # noqa
+            results_collection.total_partial_matches += result.num_partial_matches  # noqa
+            results_collection.results.append(result)
+        return results_collection
 
     def reset(self) -> bool:
         if self.use_exact:
