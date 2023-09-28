@@ -1,6 +1,9 @@
 # TODO
 
-
+## cleanup backend
+Move tfbinarizer to the tf backend
+Move binarize to onnx (do probably a dir)
+move the TFKNN to backend/tf/dir after refactoring
 
 Don't use np.array or np.asarray - use instead `asanyarray`
 see: https://stackoverflow.com/questions/56805126/is-there-a-significant-overhead-in-calling-np-asarray-on-a-numpy-array

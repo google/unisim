@@ -51,8 +51,6 @@ class TextEmbedder(Embedder):
 
         # inputs: [text1, text2, text3]
         # if bacckend == bacj,e.tf:
-
-    else:
         cnts.start('binarizer')
         batch, docids = binarizer(inputs, chunk_size=self.chunk_size)
         cnts.stop('binarizer')

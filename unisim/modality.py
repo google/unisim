@@ -88,7 +88,6 @@ class Modality(object):
                     verbose: int = 0) -> Tuple[BatchGlobalEmbeddings,
                                                BatchPartialEmbeddings]:
         self._lazy_init()
-        inputs = np.asanyarray(inputs)
         ges, pes = self.embedder.batch_compute_embeddings(inputs,
                                                           verbose=verbose)
         return ges, pes
