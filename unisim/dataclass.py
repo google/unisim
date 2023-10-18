@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import dataclasses as dc
+from typing import Any, Callable, Dict, List, Optional, Sequence
+
 import numpy as np
 
-from typing import Optional, Dict, Any, Callable, Sequence, List
 from .types import GlobalEmbedding, PartialEmbeddings, TensorEmbedding
 
 
@@ -50,9 +51,15 @@ class ResultCollection:
     def __repr__(self) -> str:
         res = "-[Results statistics]-"
         res = f"Results: {len(self.results)}\n"
-        res += f'Global Match: {self.total_global_matches}\n'
-        res += f'Partial Match: {self.total_partial_matches}'
+        res += f"Global Match: {self.total_global_matches}\n"
+        res += f"Partial Match: {self.total_partial_matches}"
         return res
+
+    def merge_result_collection(self, other: ResultCollection) -> ResultCollection:
+        self.total_global_matches += other.total_global_matches
+        self.total_partial_matches += other.total_partial_matches
+        self.results.extend(other.results)
+        return self
 
 
 @dc.dataclass
