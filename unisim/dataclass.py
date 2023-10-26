@@ -66,6 +66,7 @@ class ResultCollection:
 class Similarity:
     query_embedding: TensorEmbedding
     target_embedding: TensorEmbedding
+    # TODO(ovallis) this is the distance of the similarity?
     distance: float
 
     is_global_match: bool = False

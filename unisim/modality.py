@@ -3,9 +3,9 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from . import backend as B
-from .dataclass import Match, Result, ResultCollection, Similarity
-from .embedder import TextEmbedder
-from .enums import IndexerType, ModalityType
+from .dataclass import Result, ResultCollection
+from .embedder import Embedder
+from .enums import IndexerType
 from .indexer import Indexer
 from .types import BatchGlobalEmbeddings, BatchPartialEmbeddings
 
@@ -21,29 +21,27 @@ class Modality(object):
 
     def __init__(
         self,
-        batch_size: int,
+        store_data: bool,
         global_threshold: float,
         partial_threshold: float,
-        modality: ModalityType,
-        model_version: int,
-        indexer_type: IndexerType,
-        indexer_params: Dict,
-        use_tf_knn: bool,
-        store_data: bool,
+        index_type: str | IndexerType,
+        batch_size: int,
+        embedding_model: Embedder,
+        model_id: str,
+        index_params: Dict[str, Any] | None = None,
         verbose: int = 0,
     ) -> None:
         # model
         self.batch_size = batch_size
-        self.modality = modality
-        self.model_version = model_version
+        self.embedding_model = embedding_model
+        self.model_id = model_id
         self.global_threshold = global_threshold
         self.partial_threshold = partial_threshold
 
         # indexes
         self.global_index_size = 0  # track idxs as we have two indexers
-        self.indexer_type = indexer_type
-        self.indexer_params = indexer_params
-        self.use_tf_knn = use_tf_knn
+        self.index_type = index_type
+        self.index_params = index_params if index_params else {}
         self.store_data = store_data
 
         # internal state
@@ -58,25 +56,17 @@ class Modality(object):
             return
 
         # embedder
-        if self.modality == ModalityType.text:
-            self.embedder = TextEmbedder(
-                batch_size=self.batch_size,
-                version=self.model_version,
-                verbose=self.verbose,
-            )
-            self.embedding_size = self.embedder.embdding_size
-            self.partial_size = self.embedder.chunk_size
-        else:
-            raise ValueError(f"Unknown modality: {self.modality}")
+        self.embedding_size = self.embedder.embdding_size
+        self.partial_size = self.embedder.chunk_size
 
         # indexer
         self.indexer = Indexer(
             embedding_size=self.embedding_size,
             use_tf_knn=self.use_tf_knn,
-            index_type=self.indexer_type,
+            index_type=self.index_type,
             global_threshold=self.global_threshold,
             partial_threshold=self.partial_threshold,
-            params=self.indexer_params,
+            params=self.index_params,
         )
         self.is_initialized = True
 
@@ -99,48 +89,16 @@ class Modality(object):
         pes_results = np.concatenate(pes_results, axis=0)
         return ges_results, pes_results
 
-    # fixme: return a match or similarity object
-    def similarity(self, input1, input2) -> Similarity:
+    def similarity(self, input1: Any, input2: Any) -> float:
         # compute embeddings
         batch = [input1, input2]
         ge, pe = self.embed(batch)
 
         # global distance
-        global_distances = B.cosine_similarity(ge, ge)
-        global_distances = np.asanyarray(global_distances)
+        similarity = B.cosine_similarity(ge[0], ge[1])
+        similarity = np.asanyarray(similarity)[0]
 
-        # init similarity dataclass
-        simres = Similarity(
-            query_embedding=ge[0],
-            target_embedding=ge[1],
-            distance=float(global_distances[0][1]),  # we don't want the diag
-        )
-
-        # is it a match
-        if simres.distance >= self.global_threshold:
-            simres.is_global_match = True
-
-        # partial matches
-        partial_distances = B.cosine_similarity(pe[0], pe[1])
-
-        # FIXME use GPU acceleration if possible]
-        partial_distances = np.asanyarray(partial_distances)
-        for idx1, chunk_distances in enumerate(partial_distances):
-            idx2 = np.argmax(chunk_distances)
-            dist = chunk_distances[idx2]
-            pmatch = Match(
-                idx=0,
-                global_rank=1,
-                global_similarity=float(dist),
-                match_len=self.partial_size,
-                target_match_position=(idx2 + 1) * self.partial_size,
-                query_match_position=(idx1 + 1) * self.partial_size,
-            )
-            if dist > self.partial_threshold:
-                pmatch.is_partial_match = True
-                simres.is_partial_match = True
-            simres.partial_matches.append(pmatch)
-        return simres
+        return similarity
 
     # indexing
     def index(self, inputs: Sequence[Any]) -> Sequence[int]:
