@@ -15,28 +15,31 @@
  """
 
 from collections import defaultdict
+from typing import Any, Dict, Sequence
+
 import numpy as np
-from usearch.index import search, Index, MetricKind
+from usearch.index import Index
 from usearch.index import Match as UMatch
-from .config import get_accelerator, get_backend
-from .enums import AcceleratorType, BackendType, IndexerType
-from .dataclass import ResultCollection, Result, Match
-from . import backend as B
+from usearch.index import MetricKind, search
+
 # we might want to use it with ONNX - consider moving it in a different file?
 from .backend.tf import knn as tfknn
-from typing import Sequence, Dict, Any
+from .config import get_accelerator
+from .dataclass import Match, Result, ResultCollection
+from .enums import AcceleratorType, IndexerType
 
 
-class Indexer():
+class Indexer:
     # FIXME: use TF or usearch based on accelerator/backend
-    def __init__(self,
-                 embedding_size: int,
-                 index_type: IndexerType,
-                 global_threshold: float,
-                 partial_threshold: float,
-                 params: Dict,
-                 use_tf_knn: bool) -> None:
-
+    def __init__(
+        self,
+        embedding_size: int,
+        index_type: IndexerType,
+        global_threshold: float,
+        partial_threshold: float,
+        params: Dict,
+        use_tf_knn: bool,
+    ) -> None:
         self.embedding_size = embedding_size
         self.params = params
         self.index_type = index_type
@@ -64,8 +67,8 @@ class Indexer():
             # FIXME: wire self.params
             self.global_index = Index(
                 ndim=self.embedding_size,  # Define the number of dimensions in input vectors
-                metric='ip',  # Choose 'l2sq', 'haversine' or other metric, default = 'ip'
-                dtype='f32',  # Quantize to 'f16' or 'i8' if needed, default = 'f32'
+                metric="ip",  # Choose 'l2sq', 'haversine' or other metric, default = 'ip'
+                dtype="f32",  # Quantize to 'f16' or 'i8' if needed, default = 'f32'
                 connectivity=16,  # Optional: How frequent should the connections in the graph be
                 expansion_add=128,  # Optional: Control the recall of indexing
                 expansion_search=64,  # Optional: Control the quality of search
@@ -73,19 +76,14 @@ class Indexer():
 
             self.partial_index = Index(
                 ndim=self.embedding_size,
-                metric='ip',
-                dtype='f32',
+                metric="ip",
+                dtype="f32",
                 connectivity=16,
                 expansion_add=128,
-                expansion_search=64
+                expansion_search=64,
             )
 
-    def batch_index(self,
-                    global_embeddings,
-                    global_idxs,
-                    partial_embeddings,
-                    partial_idxs):
-
+    def index(self, global_embeddings, global_idxs, partial_embeddings, partial_idxs):
         self.global_idxs.extend(global_idxs)
         self.partial_idx_2_global_idx.extend(partial_idxs)
 
@@ -95,8 +93,7 @@ class Indexer():
         else:
             gkeys = np.asanyarray(global_idxs)
             gvects = np.asanyarray(global_embeddings)
-            pkeys = np.arange(self.usearch_pkeys_count,
-                              self.usearch_pkeys_count + len(partial_idxs))
+            pkeys = np.arange(self.usearch_pkeys_count, self.usearch_pkeys_count + len(partial_idxs))
             self.usearch_pkeys_count += len(partial_idxs)  # move internal cursor
 
             pvects = np.asanyarray(partial_embeddings)
@@ -104,14 +101,16 @@ class Indexer():
             self.global_index.add(gkeys, gvects)
             self.partial_index.add(pkeys, pvects)
 
-    def batch_query(self,
-                    global_query_embeddings,
-                    partial_query_embeddings,
-                    gk: int, pk: int,
-                    return_data: bool,
-                    queries: Sequence[Any],
-                    data: Sequence[Any] = []) -> ResultCollection:
-
+    def query(
+        self,
+        global_query_embeddings,
+        partial_query_embeddings,
+        gk: int,
+        pk: int,
+        return_data: bool,
+        queries: Sequence[Any],
+        data: Sequence[Any] = [],
+    ) -> ResultCollection:
         if return_data and not data:
             raise ValueError("Can't return data, data is empty")
 
@@ -125,9 +124,7 @@ class Indexer():
             # print(global_query_embeddings.shape)
 
             # global matches
-            gidxs, gdists = tfknn(global_query_embeddings,
-                                  self.global_embeddings,
-                                  k=gk)
+            gidxs, gdists = tfknn(global_query_embeddings, self.global_embeddings, k=gk)
 
             gidxs = np.asanyarray(gidxs)
             gdists = np.asanyarray(gdists)
@@ -140,9 +137,7 @@ class Indexer():
                 gmatches_batch.append(matches)
 
             # partial matches
-            pidxs, pdists = tfknn(partial_query_embeddings,
-                                  self.partial_embeddings,
-                                  k=pk)
+            pidxs, pdists = tfknn(partial_query_embeddings, self.partial_embeddings, k=pk)
             pidxs = np.asanyarray(pidxs)
             pdists = np.asanyarray(pdists)
             pmatches_batch = []
@@ -170,30 +165,32 @@ class Indexer():
             pcount = pk if pk < plen else plen
 
             # ! the exact=self.use_exact is what switch from exact to approx
-            gmatches_batch = search(self.global_embeddings,
-                                    global_query_embeddings,
-                                    metric=MetricKind.IP,
-                                    count=gcount,
-                                    exact=self.use_exact)
+            gmatches_batch = search(
+                self.global_embeddings,
+                global_query_embeddings,
+                metric=MetricKind.IP,
+                count=gcount,
+                exact=self.use_exact,
+            )
 
-            pmatches_batch = search(self.partial_embeddings,
-                                    partial_query_embeddings,
-                                    metric=MetricKind.IP,
-                                    count=pcount,
-                                    exact=self.use_exact)
+            pmatches_batch = search(
+                self.partial_embeddings,
+                partial_query_embeddings,
+                metric=MetricKind.IP,
+                count=pcount,
+                exact=self.use_exact,
+            )
         else:
             # approx
             # global search
             glen = self.global_index.size
             gcount = gk if gk < glen else glen
-            gmatches_batch = self.global_index.search(global_query_embeddings,
-                                                      count=gcount)
+            gmatches_batch = self.global_index.search(global_query_embeddings, count=gcount)
 
             # partial search
             plen = self.partial_index.size
             pcount = pk if pk < plen else plen
-            pmatches_batch = self.partial_index.search(partial_query_embeddings,
-                                                       count=pcount)
+            pmatches_batch = self.partial_index.search(partial_query_embeddings, count=pcount)
 
         # FIXME: this code should be rewritten to do partial first and only
         # query for global if partial -- will be faster and potentially easier
@@ -210,9 +207,7 @@ class Indexer():
                 target_idx = m.key
                 similarity = 1 - m.distance
 
-                match = Match(idx=target_idx,
-                              global_rank=rank,
-                              global_similarity=similarity)
+                match = Match(idx=target_idx, global_rank=rank, global_similarity=similarity)
 
                 if return_data:
                     match.data = data[target_idx]
@@ -258,9 +253,7 @@ class Indexer():
 
                 else:
                     # if not exist create
-                    match = Match(idx=target_idx,
-                                  partial_rank=rank,
-                                  partial_similarity=similarity)
+                    match = Match(idx=target_idx, partial_rank=rank, partial_similarity=similarity)
                     if return_data:
                         match.data = data[target_idx]
 
