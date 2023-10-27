@@ -29,27 +29,25 @@ from ..types import BatchEmbeddings, BatchGlobalEmbeddings, BatchPartialEmbeddin
 class Embedder(ABC):
     "Convert inputs to embeddings suitable for indexing"
 
-    def __init__(self, batch_size: int, modality: str, model_version: int, verbose: int = 0) -> None:
+    def __init__(self, batch_size: int, model_id: str, verbose: int = 0) -> None:
         self.batch_size = batch_size
-        self.modality = modality
-        self.model_version = model_version
-        self.model_fname = f"unisim_{modality}_v{model_version}"
+        self.model_id = model_id
         self.verbose = verbose
 
-        # fixme load ondemand from the internet
-        # find the model path
+        # TODO (marinazh): host on cloud and download when needed instead
         fpath = Path(__file__)
-        model_path = fpath.parent / "models" / self.model_fname
+        model_path = fpath.parent / "models" / self.model_id
 
-        # load model
         if self.verbose:
             print("[Loading model]")
-            print(f"|-batch_size:{batch_size}")
-            print(f"|-modality:{modality}")
-            print(f"|-version:{model_version}")
+            print(f"|-model_id: {model_id}")
 
-        # load model
         self.model = B.load_model(model_path, verbose=verbose)
+
+    @property
+    @abstractmethod
+    def embedding_size(self):
+        return NotImplementedError
 
     @abstractmethod
     def embed(self, inputs: Sequence[Any]) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
@@ -66,13 +64,9 @@ class Embedder(ABC):
     def predict(self, data) -> BatchEmbeddings:
         "Run inference using the loaded model with the right framework"
         embeddings = []
-        dlen = len(data)
-        pb = tqdm(total=dlen, desc="Computing partial embeddings", unit="embeddings")
         for idx in range(0, len(data), self.batch_size):
             batch = data[idx : idx + self.batch_size]
             batch_embs = B.predict(self.model, batch=batch)
             embeddings.extend(batch_embs)
-            pb.update(batch_embs.shape[0])
         embeddings = np.asanyarray(embeddings)
-        pb.close()
         return embeddings

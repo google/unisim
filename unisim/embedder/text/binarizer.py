@@ -21,15 +21,6 @@ import numpy as np
 
 PAD = [0.0] * 24
 
-
-# @cache
-# def tobin(codepoint: int) -> Sequence[float]:
-#     # 24bits representation
-#     # 24 bits + 2byes for 0b at the begining = #026b
-#     v = format(codepoint, '#026b')
-#     return [float(b) for b in v[2:]]
-
-
 @cache
 def char2bin(chr: str) -> Sequence[float]:
     cp = ord(chr)
@@ -48,9 +39,9 @@ def binarize_str(
     txt: AnyStr,
     docid: int,
     chunk_size: int = 512,
-    cleanup: bool = True,
+    cleanup: bool = False,
     lowercase: bool = False,
-    last_chunk_min_size: int = 16,
+    last_chunk_min_size: int = 256,
 ):
     if lowercase:
         txt = txt.lower()
@@ -118,13 +109,14 @@ def binarizer(txts: Sequence[AnyStr], chunk_size: int = 512, last_chunk_min_size
     return inputs, chunk_ids
 
 
+# TODO (marinazh): parallelize the binarizer for efficiency
 def multi_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
     # parallelize
     promises = []
     with futures.ProcessPoolExecutor() as executor:
         for docid, txt in enumerate(txts):
             promises.append(executor.submit(binarize_str, txt=txt, docid=docid, chunk_size=chunk_size))
-        # collect
+
         inputs = []
         docids = []
         for promise in futures.as_completed(promises):

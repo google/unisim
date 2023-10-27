@@ -28,18 +28,27 @@ class TextEmbedder(Embedder):
     Use RetSim model to convert text to embeddings
     """
 
-    def __init__(self, batch_size: int, version: int = 1, verbose: int = 0) -> None:
+    def __init__(self, batch_size: int, model_id: str = "text/retsim/1", verbose: int = 0) -> None:
         # model loading is handled in the super
-        super().__init__(batch_size=batch_size, modality="text", model_version=version, verbose=verbose)
-        # set constanstant
-        self.chunk_size = 512
-        self.embdding_size = 256
+        super().__init__(batch_size=batch_size, model_id=model_id, verbose=verbose)
+
+        # TODO (marinazh): change to be dependent on model, too brittle
+        self._chunk_size = 512
+        self._embedding_size = 256
+
+    @property
+    def embedding_size(self):
+        return self._embedding_size
+
+    @property
+    def chunk_size(self):
+        return self._chunk_size
 
     def embed(
         self,
         inputs: Sequence[AnyStr],
     ) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
-        """Compute text embeddins
+        """Compute text embeddings.
 
         A note on performance:
         inputs are non constant size so there is a lot vectorization ops
@@ -57,13 +66,13 @@ class TextEmbedder(Embedder):
 
         # averaging - might be faster with TF FIXME: try and benchmark
         partial_embeddings = np.asanyarray(partial_embeddings, dtype=floatx())
-        avg_embeddings = []
+        global_embeddings = []
         stacked_partial_embeddings = []  # we need those
         for idxs in docids:
             embs = np.take(partial_embeddings, idxs, axis=0)
             avg_emb = np.sum(embs, axis=0) / len(embs)
-            avg_embeddings.append(avg_emb)
+            global_embeddings.append(avg_emb)
             stacked_partial_embeddings.append(embs)
 
         # NOTE: avg_embeddings is a list of np.array here. We need to stack later.
-        return avg_embeddings, stacked_partial_embeddings
+        return global_embeddings, stacked_partial_embeddings

@@ -17,11 +17,7 @@
 from __future__ import annotations
 
 import dataclasses as dc
-from typing import Any, Callable, Dict, List, Optional, Sequence
-
-import numpy as np
-
-from .types import GlobalEmbedding, PartialEmbeddings, TensorEmbedding
+from typing import Any, List
 
 
 @dc.dataclass
@@ -30,23 +26,19 @@ class Match:
     global_rank: int | None = None
     global_similarity: float | None = None
 
-    # todo we need to count num partials
-    # num chunk
-    # give partial match ratio
-    # todo move to partial map @ovallis
     partial_rank: int | None = None
     partial_similarity: float | None = None
 
     is_global_match: bool = False
     is_partial_match: bool = False
 
-    # partial match only
-    match_len: int = 0
-    target_match_position: int = 0
-    query_match_position: int = 0
-
-    # if we have the content
+    # store data
     data: Any = dc.field(default=None)
+
+    # TODO (marinazh): add in partial match positions
+    # partial_target_match_position: int = 0
+    # partial_query_matches_position: int = 0
+    # partial_matches_ratio: int = 0
 
 
 @dc.dataclass
@@ -65,10 +57,10 @@ class ResultCollection:
     results: List[Result] = dc.field(default_factory=lambda: [])
 
     def __repr__(self) -> str:
-        res = "-[Results statistics]-"
-        res = f"Results: {len(self.results)}\n"
-        res += f"Global Match: {self.total_global_matches}\n"
-        res += f"Partial Match: {self.total_partial_matches}"
+        res = "-[Results Statistics]-\n"
+        res += f"Number of Results: {len(self.results)}\n"
+        res += f"Total Global Matches: {self.total_global_matches}\n"
+        res += f"Total Partial Matches: {self.total_partial_matches}"
         return res
 
     def merge_result_collection(self, other: ResultCollection) -> ResultCollection:
@@ -76,18 +68,3 @@ class ResultCollection:
         self.total_partial_matches += other.total_partial_matches
         self.results.extend(other.results)
         return self
-
-
-@dc.dataclass
-class Similarity:
-    query_embedding: TensorEmbedding
-    target_embedding: TensorEmbedding
-    # TODO(ovallis) this is the distance of the similarity?
-    distance: float
-
-    is_global_match: bool = False
-    is_partial_match: bool = False
-
-    num_partial_matches: int = 0
-    partial_matches_ratio: float = 0  # num matched partial / total chunk
-    partial_matches: List[Match] = dc.field(default_factory=lambda: [])

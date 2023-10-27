@@ -14,5 +14,5 @@
  limitations under the License.
  """
 
-from .text.text_embedder import TextEmbedder
-from .embedder import Embedder
+from .text.text_embedder import TextEmbedder # noqa: F401
+from .embedder import Embedder # noqa: F401
