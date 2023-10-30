@@ -30,7 +30,7 @@ def set_up_test_indexer(index_type):
         global_threshold=GLOBAL_THRESHOLD,
         partial_threshold=PARTIAL_THREHOLD,
         index_type=index_type,
-        params={}
+        params={},
     )
     global_embs = np.array([[1, 1, 3], [3, 1, 2]], dtype="float32")
     global_idxs = [0, 1]
