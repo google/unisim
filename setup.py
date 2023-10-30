@@ -67,6 +67,7 @@ setup(
             "tabulate",
             "black",
             "isort",
+            "tf2onnx"
         ],
     },
     classifiers=[

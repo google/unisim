@@ -13,28 +13,23 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-from typing import Any, Dict, Sequence, Tuple
+from typing import Sequence
+
 import numpy as np
 
 
 def flatten_partial_embeddings(
-        batch_partial_embeddings,
-        ges_idxs: Sequence[int] | None = None,
-    ):
-        "Flatten partial embeddings and remap idxs to global ones"
-        if ges_idxs is None:
-            ges_idxs = []
-        flatten_pes = []
-        pes_idxs = []
-        for idx, pes in enumerate(batch_partial_embeddings):
-            for pe in pes:
-                flatten_pes.append(pe)
-                if ges_idxs:
-                    pes_idxs.append(ges_idxs[idx])
-        return np.asanyarray(flatten_pes), pes_idxs
-
-
-def get_batched_inputs(inputs: Sequence[Any], batch_size: int):
-    for b_offset in range(0, len(inputs), batch_size):
-        batch = inputs[b_offset : b_offset + batch_size]
-        yield batch
+    batch_partial_embeddings,
+    ges_idxs: Sequence[int] | None = None,
+):
+    "Flatten partial embeddings and remap idxs to global ones"
+    if ges_idxs is None:
+        ges_idxs = []
+    flatten_pes = []
+    pes_idxs = []
+    for idx, pes in enumerate(batch_partial_embeddings):
+        for pe in pes:
+            flatten_pes.append(pe)
+            if ges_idxs:
+                pes_idxs.append(ges_idxs[idx])
+    return np.asanyarray(flatten_pes), pes_idxs

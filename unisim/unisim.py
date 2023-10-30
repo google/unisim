@@ -25,11 +25,10 @@ from .embedder import Embedder
 from .enums import AcceleratorType, IndexerType
 from .indexer import Indexer
 from .types import BatchGlobalEmbeddings, BatchPartialEmbeddings
-from .utils import flatten_partial_embeddings, get_batched_inputs
+from .utils import flatten_partial_embeddings
 
 
 class UniSim(ABC):
-
     def __init__(
         self,
         store_data: bool,
@@ -101,7 +100,6 @@ class UniSim(ABC):
             ges_results.append(ges)
             pes_results.append(pes)
 
-        # TODO (marinazh): L2 normalize
         ges_results = np.concatenate(ges_results, axis=0)
         pes_results = np.concatenate(pes_results, axis=0)
         return ges_results, pes_results
@@ -111,8 +109,10 @@ class UniSim(ABC):
         batch = [input1, input2]
         ge, _ = self.embed(batch)
 
+        print(ge)
         # compute global similarity
         similarity = B.cosine_similarity(ge, ge)
+        print(similarity)
         similarity = np.asanyarray(similarity[0][1])
 
         # clip sometimes for floating point error
@@ -121,7 +121,7 @@ class UniSim(ABC):
         return similarity
 
     # indexing
-    def index(self, inputs: Sequence[Any]) -> Sequence[int]:
+    def add(self, inputs: Sequence[Any]) -> Sequence[int]:
         ges_idxs = []
         for b_offset in range(0, len(inputs), self.batch_size):
             batch = inputs[b_offset : b_offset + self.batch_size]
@@ -135,7 +135,7 @@ class UniSim(ABC):
             fpes, pes_idxs = flatten_partial_embeddings(bpes, idxs)
 
             # indexing global and partials
-            self.indexer.index(ges, idxs, fpes, pes_idxs)
+            self.indexer.add(ges, idxs, fpes, pes_idxs)
 
             # store inputs if requested
             if self.store_data:
@@ -153,7 +153,7 @@ class UniSim(ABC):
 
             fpqe, _ = flatten_partial_embeddings(pqe)
 
-            r = self.indexer.query(
+            r = self.indexer.search(
                 global_query_embeddings=gqe,
                 partial_query_embeddings=fpqe,
                 gk=gk,

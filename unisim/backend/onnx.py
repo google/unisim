@@ -14,13 +14,13 @@
  limitations under the License.
  """
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 from onnxruntime import InferenceSession
 
 # typing
-from ..types import BatchEmbeddings
-from ..types import BatchDistances2D
+from ..types import BatchDistances2D, BatchEmbeddings
 
 
 def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> BatchDistances2D:
@@ -45,7 +45,10 @@ _providers = [
 
 def load_model(path: Path, verbose: int = 0):
     # specialize path
-    mpath = str(path) + ".onnx"
+    if str(path).endswith("onnx"):
+        mpath = path
+    else:
+        mpath = str(path) + ".onnx"
     if verbose:
         print(f"|-model path: {mpath}")
 

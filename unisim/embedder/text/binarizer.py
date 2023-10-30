@@ -13,13 +13,13 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-from concurrent import futures
 from functools import cache
 from typing import AnyStr, Sequence
 
 import numpy as np
 
 PAD = [0.0] * 24
+
 
 @cache
 def char2bin(chr: str) -> Sequence[float]:
@@ -29,9 +29,10 @@ def char2bin(chr: str) -> Sequence[float]:
 
 
 @cache
-def token2bin(word: str) -> Sequence[float]:
+def token2bin(word: str, add_space: bool = True) -> Sequence[float]:
     "convert a word"
-    word += " "
+    if add_space:
+        word += " "
     return [char2bin(c) for c in word]
 
 
@@ -39,9 +40,9 @@ def binarize_str(
     txt: AnyStr,
     docid: int,
     chunk_size: int = 512,
-    cleanup: bool = False,
-    lowercase: bool = False,
     last_chunk_min_size: int = 256,
+    cleanup: bool = True,
+    lowercase: bool = False,
 ):
     if lowercase:
         txt = txt.lower()
@@ -51,8 +52,9 @@ def binarize_str(
         # note: we use token2bin because we hope to leverage caching per token
         words = txt.split()
         bins = []
-        for w in words:
-            bins.extend(token2bin(w))
+        for w in words[:-1]:
+            bins.extend(token2bin(w, add_space=True))
+        bins.extend(token2bin(words[-1], add_space=False))  # don't add space to last word
     else:
         bins = [char2bin(c) for c in txt]
 
@@ -78,29 +80,27 @@ def binarize_str(
     return arr, num_chunks, docid
 
 
-def vectorized_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512, last_chunk_min_size: int = 16):
-    inputs = []
-    for docid, txt in enumerate(txts):
-        arr, _, _ = binarize_str(
-            txt=txt, docid=docid, chunk_size=chunk_size, last_chunk_min_size=last_chunk_min_size
-        )  # noqa
-        inputs.append(arr)
-
-    doc_ids = list(range(len(inputs)))
-    # TODO(ovallis): Convert to dense 3D array and pad with zeros.
-    return inputs, doc_ids
-
-
-def binarizer(txts: Sequence[AnyStr], chunk_size: int = 512, last_chunk_min_size: int = 16):
+def binarizer(
+    txts: Sequence[AnyStr],
+    chunk_size: int = 512,
+    last_chunk_min_size: int = 256,
+    cleanup: bool = True,
+    lowercase: bool = False,
+):
     inputs = []
     chunk_ids = []
     chunk_ids_cursor = 0
     for docid, txt in enumerate(txts):
         arr, num_chunks, docid = binarize_str(
-            txt=txt, docid=docid, chunk_size=chunk_size, last_chunk_min_size=last_chunk_min_size
-        )  # noqa
+            txt=txt,
+            docid=docid,
+            chunk_size=chunk_size,
+            last_chunk_min_size=last_chunk_min_size,
+            cleanup=cleanup,
+            lowercase=lowercase,
+        )
         inputs.extend(arr)
-        current_chunks_ids = np.arange(chunk_ids_cursor, chunk_ids_cursor + num_chunks)
+        current_chunks_ids = list(range(chunk_ids_cursor, chunk_ids_cursor + num_chunks))
         chunk_ids.append(current_chunks_ids)
         chunk_ids_cursor += num_chunks
 
@@ -109,22 +109,35 @@ def binarizer(txts: Sequence[AnyStr], chunk_size: int = 512, last_chunk_min_size
     return inputs, chunk_ids
 
 
+# def vectorized_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512, last_chunk_min_size: int = 16):
+#     inputs = []
+#     for docid, txt in enumerate(txts):
+#         arr, _, _ = binarize_str(
+#             txt=txt, docid=docid, chunk_size=chunk_size, last_chunk_min_size=last_chunk_min_size
+#         )  # noqa
+#         inputs.append(arr)
+
+#     doc_ids = list(range(len(inputs)))
+#     # TODO(ovallis): Convert to dense 3D array and pad with zeros.
+#     return inputs, doc_ids
+
+
 # TODO (marinazh): parallelize the binarizer for efficiency
-def multi_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
-    # parallelize
-    promises = []
-    with futures.ProcessPoolExecutor() as executor:
-        for docid, txt in enumerate(txts):
-            promises.append(executor.submit(binarize_str, txt=txt, docid=docid, chunk_size=chunk_size))
+# def multi_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
+#     # parallelize
+#     promises = []
+#     with futures.ProcessPoolExecutor() as executor:
+#         for docid, txt in enumerate(txts):
+#             promises.append(executor.submit(binarize_str, txt=txt, docid=docid, chunk_size=chunk_size))
 
-        inputs = []
-        docids = []
-        for promise in futures.as_completed(promises):
-            data = promise.result()
-            arr, num_chunks, docid = data
-            inputs.extend(arr)
-            docids.append([docid] * num_chunks)
+#         inputs = []
+#         docids = []
+#         for promise in futures.as_completed(promises):
+#             data = promise.result()
+#             arr, num_chunks, docid = data
+#             inputs.extend(arr)
+#             docids.append([docid] * num_chunks)
 
-    # stack
-    inputs = np.stack(inputs, axis=0)
-    return inputs, docids
+#     # stack
+#     inputs = np.stack(inputs, axis=0)
+#     return inputs, docids

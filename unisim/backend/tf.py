@@ -15,7 +15,6 @@
  """
 
 from pathlib import Path
-from typing import Tuple
 
 import tensorflow as tf
 
@@ -23,9 +22,7 @@ import tensorflow as tf
 from ..types import BatchDistances2D, BatchEmbeddings
 
 
-# @tf.function(jit_compile=True)
-def cosine_similarity(query_embeddings: BatchEmbeddings,
-                      index_embeddings: BatchEmbeddings) -> BatchDistances2D:
+def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> BatchDistances2D:
     """Compute cosine similarity between embeddings
 
     Args:
@@ -49,7 +46,6 @@ def load_model(path: Path, verbose: int = 0):
     return model
 
 
-# @tf.function()  # jit_compile=True)
 def predict(model, batch) -> BatchEmbeddings:
     # add strategy here
     return model(batch, training=False)

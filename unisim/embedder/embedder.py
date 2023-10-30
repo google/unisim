@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Any, Sequence, Tuple
 
 import numpy as np
-from tqdm.auto import tqdm
 
 from .. import backend as B
 from ..types import BatchEmbeddings, BatchGlobalEmbeddings, BatchPartialEmbeddings

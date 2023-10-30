@@ -14,13 +14,14 @@
  limitations under the License.
  """
 from typing import Any, Dict, Sequence, Tuple
+
 from tabulate import tabulate
 
 from .dataclass import Result
-from .unisim import UniSim
 from .embedder import TextEmbedder
 from .enums import IndexerType
 from .types import BatchGlobalEmbeddings, BatchPartialEmbeddings
+from .unisim import UniSim
 
 
 class TextSim(UniSim):
@@ -60,8 +61,8 @@ class TextSim(UniSim):
     def embed(self, inputs: Sequence[str]) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
         return super().embed(inputs)
 
-    def index(self, inputs: Sequence[str]) -> Sequence[int]:
-        return super().index(inputs)
+    def add(self, inputs: Sequence[str]) -> Sequence[int]:
+        return super().add(inputs)
 
     def search(self, inputs: Sequence[str], gk: int = 5, pk: int = 5):
         return super().search(inputs, gk, pk)

@@ -14,6 +14,7 @@
  limitations under the License.
  """
 from typing import AnyStr, Sequence, Tuple
+
 import numpy as np
 
 from ...config import floatx
@@ -28,7 +29,7 @@ class TextEmbedder(Embedder):
     Use RetSim model to convert text to embeddings
     """
 
-    def __init__(self, batch_size: int, model_id: str = "text/retsim/1", verbose: int = 0) -> None:
+    def __init__(self, batch_size: int, model_id: str = "text/retsim/v1", verbose: int = 0) -> None:
         # model loading is handled in the super
         super().__init__(batch_size=batch_size, model_id=model_id, verbose=verbose)
 
@@ -71,6 +72,7 @@ class TextEmbedder(Embedder):
         for idxs in docids:
             embs = np.take(partial_embeddings, idxs, axis=0)
             avg_emb = np.sum(embs, axis=0) / len(embs)
+            avg_emb = avg_emb / np.linalg.norm(avg_emb)
             global_embeddings.append(avg_emb)
             stacked_partial_embeddings.append(embs)
 

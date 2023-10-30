@@ -13,27 +13,24 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-
 from collections import defaultdict
 from typing import Any, Dict, Sequence
 
 import numpy as np
-from usearch.index import Index
-from usearch.index import MetricKind, search
+from usearch.index import BatchMatches, Index, MetricKind, search
 
 from .dataclass import Match, Result, ResultCollection
 from .enums import IndexerType
 
 
 class Indexer:
-
     def __init__(
         self,
         embedding_size: int,
         global_threshold: float,
         partial_threshold: float,
         index_type: IndexerType,
-        params: Dict,
+        params: Dict = {},
     ) -> None:
         self.embedding_size = embedding_size
         self.global_threshold = global_threshold
@@ -75,7 +72,7 @@ class Indexer:
                 expansion_search=params.get("expansion_search", 64),
             )
 
-    def index(self, global_embeddings, global_idxs, partial_embeddings, partial_idxs):
+    def add(self, global_embeddings, global_idxs, partial_embeddings, partial_idxs):
         self.global_idxs.extend(global_idxs)
         self.partial_idx_2_global_idx.extend(partial_idxs)
 
@@ -93,7 +90,7 @@ class Indexer:
             self.global_index.add(gkeys, gvects)
             self.partial_index.add(pkeys, pvects)
 
-    def query(
+    def search(
         self,
         global_query_embeddings,
         partial_query_embeddings,
@@ -108,7 +105,6 @@ class Indexer:
 
         # Using USearch exact search
         if self.use_exact:
-
             # make sure we have contigious np.arrays
             self.global_embeddings = np.asanyarray(self.global_embeddings)
             self.partial_embeddings = np.asanyarray(self.partial_embeddings)
@@ -151,6 +147,11 @@ class Indexer:
         # compute global matches
         results_map: Dict[str, Result] = {}
         matches_map: Dict[str, Dict[str, Match]] = defaultdict(dict)
+
+        # for single batch lookup Matches is returned instead of BatchMatches
+        if not isinstance(gmatches_batch, BatchMatches):
+            gmatches_batch = [gmatches_batch]
+
         for query_idx, gmatches in enumerate(gmatches_batch):
             result = Result(query_idx=query_idx)
             if return_data:
@@ -176,9 +177,17 @@ class Indexer:
             # save in a map to find it back during partial analysis
             results_map[result.query_idx] = result
 
+        # for single batch lookup Matches is returned instead of BatchMatches
+        if not isinstance(pmatches_batch, BatchMatches):
+            pmatches_batch = [pmatches_batch]
+
         # compute partial matches
         for query_idx, pmatches in enumerate(pmatches_batch):
-            result = results_map[query_idx]
+            # check if global match already
+            if query_idx in results_map:
+                result = results_map[query_idx]
+            else:
+                result = Result(query_idx=query_idx)
 
             for rank, m in enumerate(pmatches):
                 target_idx = self.partial_idx_2_global_idx[m.key]

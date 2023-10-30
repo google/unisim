@@ -13,10 +13,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-
 import os
-from ..config import set_backend, get_backend
-from ..config import set_accelerator, get_accelerator
+
+from ..config import get_accelerator, get_backend, set_accelerator, set_backend
 from ..enums import AcceleratorType, BackendType
 
 TF_AVAILABLE = False
@@ -34,6 +33,7 @@ elif not get_backend() or get_backend() == BackendType.unknown:
     # check if we find tensorflow
     try:
         import tensorflow as tf  # noqa: F403, F401
+
         TF_AVAILABLE = True
     except ImportError:
         TF_AVAILABLE = False
