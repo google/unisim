@@ -46,13 +46,7 @@ setup(
     author_email="unisim@google.com",
     url="https://github.com/google/unisim",
     license="Apache License 2.0",
-    # move to a requirements files
-    # fix the onnxruntime dependency
-    install_requires=[
-        'tabulate',
-        'numpy',
-        'tqdm'
-    ],
+    install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime"],
     extras_require={
         "tensorflow": ["tensorflow>=2.11"],
         "dev": [
@@ -67,6 +61,7 @@ setup(
             "tabulate",
             "black",
             "isort",
+            "tf2onnx",
         ],
     },
     classifiers=[

@@ -17,8 +17,8 @@
 from .enums import AcceleratorType, BackendType
 
 # internal state
-_INTX: str = 'int64'
-_FLOATX: str = 'float32'
+_INTX: str = "int64"
+_FLOATX: str = "float32"
 _BACKEND: BackendType = BackendType.unknown
 _ACCELERATOR: AcceleratorType = AcceleratorType.unknown
 
@@ -58,8 +58,8 @@ def set_floatx(value):
         ValueError: In case of invalid value.
     """
     global _FLOATX
-    if value not in {'float16', 'float32', 'float64'}:
-        raise ValueError('Unknown floatx type: ' + str(value))
+    if value not in {"float16", "float32", "float64"}:
+        raise ValueError("Unknown floatx type: " + str(value))
     _FLOATX = str(value)
 
 
@@ -96,8 +96,8 @@ def set_intx(value):
         ValueError: In case of invalid value.
     """
     global _INTX
-    if value not in {'int8', 'uint8', 'int16', 'uint16', 'int32', 'int64'}:
-        raise ValueError('Unknown intx type: ' + str(value))
+    if value not in {"int8", "uint8", "int16", "uint16", "int32", "int64"}:
+        raise ValueError("Unknown intx type: " + str(value))
     _INTX = str(value)
 
 

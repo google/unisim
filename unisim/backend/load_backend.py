@@ -13,45 +13,43 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-
 import os
-from ..config import set_backend, get_backend
-from ..config import set_accelerator, get_accelerator
+
+from ..config import get_accelerator, get_backend, set_accelerator, set_backend
 from ..enums import AcceleratorType, BackendType
+
 TF_AVAILABLE = False
 # override existing setting to allow reload
-if 'BACKEND' in os.environ:
-    bs = os.environ['BACKEND']
-    if bs == 'onnx':
+if "BACKEND" in os.environ:
+    bs = os.environ["BACKEND"]
+    if bs == "onnx":
         set_backend(BackendType.onnx)
-    elif bs == 'tf':
+    elif bs == "tf":
         set_backend(BackendType.tf)
+        import tensorflow as tf
     else:
-        raise ValueError(f"Unknown environement backend {bs}")
+        raise ValueError(f"Unknown environment backend {bs}")
 elif not get_backend() or get_backend() == BackendType.unknown:
-    # check if we find jax
+    # check if we find tensorflow
     try:
         import tensorflow as tf  # noqa: F403, F401
+
+        TF_AVAILABLE = True
     except ImportError:
         TF_AVAILABLE = False
-    else:
-        TF_AVAILABLE = True
 
-# detect device
-if TF_AVAILABLE:
+# detect accelerator
+if TF_AVAILABLE or get_backend() == BackendType.tf:
     # FIXME detect multi
     # detecting which devices we are using
-    device = tf.config.list_physical_devices()[0].device_type
-    if device == "CPU":
-        set_accelerator(AcceleratorType.cpu)
-    elif device == "GPU":
+    devices_types = [d.device_type for d in tf.config.list_physical_devices()]
+
+    if "GPU" in devices_types:
         set_accelerator(AcceleratorType.gpu)
-    elif device == "TPU":
-        set_accelerator(AcceleratorType.tpu)
     else:
-        set_accelerator(AcceleratorType.unknown)
+        set_accelerator(AcceleratorType.cpu)
+
 else:
-    # FIXME onnx gpu detection
     set_accelerator(AcceleratorType.cpu)
 
 # choose backend
@@ -70,10 +68,10 @@ else:
     # default to onnx
     set_backend(BackendType.onnx)
 
-
 # post detection
 if get_backend() == BackendType.onnx:
     from .onnx import *  # noqa: F403, F401
+
     # FIXME onnx accelerator type support
     set_accelerator(AcceleratorType.cpu)
 
@@ -90,8 +88,8 @@ elif get_backend() == BackendType.tf:
                 # Memory growth must be set before GPUs have been initialized
                 print(e)
 
-
 else:
-    raise ValueError(f'Unknown Backend {get_backend()}')
+    raise ValueError(f"Unknown backend {get_backend()}")
 
-print(f'Using {get_backend().name} with {get_accelerator().name}')
+print("Loaded backend")
+print(f"Using {get_backend().name} with {get_accelerator().name}")

@@ -13,140 +13,184 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-
 from abc import ABC
-from .enums import IndexerType, ModalityType, AcceleratorType, BackendType
-from .modality import Modality
-from .viz import Visualization
-from .config import get_accelerator, get_backend
-from typing import Dict
+from typing import Any, Dict, Sequence, Tuple
+
+import numpy as np
+
+from . import backend as B
+from .config import get_accelerator
+from .dataclass import ResultCollection
+from .embedder import Embedder
+from .enums import AcceleratorType, IndexerType
+from .indexer import Indexer
+from .types import BatchGlobalEmbeddings, BatchPartialEmbeddings
+from .utils import flatten_partial_embeddings
 
 
 class UniSim(ABC):
-
-    # modality
-    text: Modality
-    # FIXME: add image when ready
-    image: Modality
-    multimodal: Modality
-
-    # visulization
-    viz: Visualization
-
-    def __init__(self,
-                 index_type: IndexerType,
-                 indexer_params: Dict,
-                 store_data: bool,
-                 # Potentially use a diff batchsize by modality
-                 batch_size: int = 128,
-                 text_global_threshold: float = 0.9,
-                 text_partial_threshold: float = 0.85,
-                 text_model_version: int = 1,
-                 use_tf_knn: bool = False,
-                 verbose: int = 0) -> None:
-
-        super().__init__()
-        self.batch_size = batch_size
-        self.verbose = verbose
-        self.index_type = index_type
+    def __init__(
+        self,
+        store_data: bool,
+        global_threshold: float,
+        partial_threshold: float,
+        index_type: str | IndexerType,
+        batch_size: int,
+        use_accelerator: bool,
+        model_id: str,
+        embedder: Embedder,
+        index_params: Dict[str, Any] | None = None,
+        verbose: int = 0,
+    ) -> None:
         self.store_data = store_data
+        self.global_threshold = global_threshold
+        self.partial_threshold = partial_threshold
+        self.index_type = index_type if isinstance(index_type, IndexerType) else IndexerType[index_type]
+        self.batch_size = batch_size
+        self.use_accelerator = use_accelerator
+        self.model_id = model_id
+        self.embedder = embedder
+        self.index_params = index_params if index_params else {}
+        self.verbose = verbose
 
         if self.store_data:
             print("UniSim is storing a copy of the indexed data")
-            print("if you are using large data corpus consider disable this behavior using store_data=False")
+            print("If you are using large data corpus, consider disabling this behavior using store_data=False")
         else:
-            print("UniSim is not storing a copy of the index data to save memory")
-            print("If you want to store it use store_data=True")
-        # params
-        self.is_gpu = True if get_accelerator() == AcceleratorType.gpu else False  # noqa
-        self.use_exact = True if index_type == IndexerType.exact else False
-        self.use_tf = True if get_backend() == BackendType.tf else False
+            print("UniSim is not storing a copy of the indexed data to save memory")
+            print("If you want to store a copy of the data, use store_data=True")
 
-        # is tf_knn is forced by the user
-        if use_tf_knn:
-            self.use_tf_knn = True
-        # else smart detection
-        elif self.use_exact and self.use_tf and self.is_gpu:
-            self.use_tf_knn = True
-        else:
-            self.use_tf_knn = False
+        if use_accelerator and get_accelerator() == AcceleratorType.cpu:
+            print("Accelerator is not available, using cpu instead")
+            self.use_accelerator = False
 
-        # viz
-        self.viz = Visualization()
+        # internal state
+        self.global_index_size = 0  # track idxs as we have two indexers
+        self.is_initialized: bool = False
+        self.indexed_data = []
 
-        # Initalizing the models/embedders
-        self.text = Modality(batch_size=batch_size,
-                             global_threshold=text_global_threshold,
-                             partial_threshold=text_partial_threshold,
-                             modality=ModalityType.text,
-                             model_version=text_model_version,
-                             indexer_type=index_type,
-                             store_data=store_data,
-                             indexer_params=indexer_params,
-                             use_tf_knn=self.use_tf_knn,
-                             verbose=verbose)
+    def _lazy_init(self):
+        "Lazily init models and indexers"
+        # check we don't initialize indexer twice
+        if self.is_initialized:
+            return
+
+        # initialize indexer
+        self.embedding_size = self.embedder.embedding_size
+        self.indexer = Indexer(
+            embedding_size=self.embedding_size,
+            index_type=self.index_type,
+            global_threshold=self.global_threshold,
+            partial_threshold=self.partial_threshold,
+            params=self.index_params,
+        )
+        self.is_initialized = True
+
+    def embed(
+        self,
+        inputs: Sequence[Any],
+    ) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
+        self._lazy_init()
+        ges_results = []
+        pes_results = []
+        for b_offset in range(0, len(inputs), self.batch_size):
+            batch = inputs[b_offset : b_offset + self.batch_size]
+            batch = np.asanyarray(batch)
+            ges, pes = self.embedder.embed(inputs=batch)
+            ges_results.append(ges)
+            pes_results.append(pes)
+
+        ges_results = np.concatenate(ges_results, axis=0)
+        pes_results = np.concatenate(pes_results, axis=0)
+        return ges_results, pes_results
+
+    def similarity(self, input1: Any, input2: Any) -> float:
+        # compute embeddings
+        batch = [input1, input2]
+        ge, _ = self.embed(batch)
+
+        print(ge)
+        # compute global similarity
+        similarity = B.cosine_similarity(ge, ge)
+        print(similarity)
+        similarity = np.asanyarray(similarity[0][1])
+
+        # clip sometimes for floating point error
+        similarity = np.clip(similarity, 0, 1)
+
+        return similarity
+
+    # indexing
+    def add(self, inputs: Sequence[Any]) -> Sequence[int]:
+        ges_idxs = []
+        for b_offset in range(0, len(inputs), self.batch_size):
+            batch = inputs[b_offset : b_offset + self.batch_size]
+            ges, bpes = self.embed(batch)
+
+            # compute the new global idxs
+            idxs = [i + self.global_index_size for i in range(len(ges))]
+            self.global_index_size += len(idxs)
+
+            # flatten partial embeddings and maps them to global idxs
+            fpes, pes_idxs = flatten_partial_embeddings(bpes, idxs)
+
+            # indexing global and partials
+            self.indexer.add(ges, idxs, fpes, pes_idxs)
+
+            # store inputs if requested
+            if self.store_data:
+                self.indexed_data.extend(batch)
+
+            # store the global idxs
+            ges_idxs.extend(idxs)
+        return ges_idxs
+
+    def search(self, inputs: Sequence[Any], gk: int = 5, pk: int = 5):
+        results = ResultCollection()
+        for b_offset in range(0, len(inputs), self.batch_size):
+            batch = inputs[b_offset : b_offset + self.batch_size]
+            gqe, pqe = self.embed(batch)
+
+            fpqe, _ = flatten_partial_embeddings(pqe)
+
+            r = self.indexer.search(
+                global_query_embeddings=gqe,
+                partial_query_embeddings=fpqe,
+                gk=gk,
+                pk=pk,
+                return_data=self.store_data,
+                queries=batch,
+                data=self.indexed_data,
+            )
+            results.merge_result_collection(r)
+
+        return results
+
+    def reset_index(self):
+        self._lazy_init()
+        self.global_index_size = 0
+        self.indexer.reset()
+        self.indexed_data = []
 
     def info(self):
-        # FIXME more information e.g backend gpu etc
-        print(f'[Embedder]')
-        print(f'|-batch_size:{self.batch_size}')
+        self._lazy_init()
+
+        print("[Embedder]")
+        print(f"|-batch_size: {self.batch_size}")
+        print(f"|-model_id: {self.model_id}")
+        print(f"|-embedding_size: {self.embedding_size}")
+
         print("[Indexer]")
-        print(f'|-is_exact:{self.use_exact}')
-        print(f'|-use_tf_knn:{self.use_tf_knn}')
-        print(f'|-store index data:{self.store_data}')
+        print(f"|-index_type: {self.index_type.name}")
+        print(f"|-use_accelerator: {self.use_accelerator}")
+        print(f"|-store index data: {self.store_data}")
 
+    def dedup(self, inputs: Sequence[Any]):
+        raise NotImplementedError
 
-# add inmemory which don't have save
-class ExactUniSim(UniSim):
-    """Instanciate UniSim to perform exact matching
+    def save(self, filepath: str):
+        # ! DON't FORGET TO save inputs or move it to rockdb
+        raise NotImplementedError
 
-    Exact matching guarantee that you get exactly the right results at the cost
-    of requiring N^2 computation. Works well in particular
-    with a GPU sub 1M points.
-
-    """
-    def __init__(self,
-                 batch_size: int = 128,
-                 store_data: bool = True,
-                 text_global_threshold: float = 0.9,
-                 text_partial_threshold: float = 0.85,
-                 text_model_version: int = 1,
-                 use_tf_knn: bool = False,
-                 verbose: int = 0) -> None:
-
-        super().__init__(batch_size=batch_size,
-                         index_type=IndexerType.exact,
-                         indexer_params={},
-                         store_data=store_data,
-                         use_tf_knn=use_tf_knn,
-                         text_global_threshold=text_global_threshold,
-                         text_partial_threshold=text_partial_threshold,
-                         text_model_version=text_model_version,
-                         verbose=verbose)
-
-
-class ApproxUniSim(UniSim):
-    """Instanciate UniSim to perform approximate matching
-
-    Ideal for fast matching large datasets
-
-    """
-    def __init__(self,
-                 batch_size: int = 128,
-                 store_data: bool = False,
-                 text_global_threshold: float = 0.9,
-                 text_partial_threshold: float = 0.85,
-                 text_model_version: int = 1,
-                 use_tf_knn: bool = False,
-                 verbose: int = 0) -> None:
-        # FIXME: wire indexer params
-
-        super().__init__(batch_size=batch_size,
-                         index_type=IndexerType.approx,
-                         indexer_params={},
-                         store_data=store_data,
-                         use_tf_knn=use_tf_knn,
-                         text_global_threshold=text_global_threshold,
-                         text_partial_threshold=text_partial_threshold,
-                         text_model_version=text_model_version,
-                         verbose=verbose)
+    def load(self, filepath: str):
+        raise NotImplementedError

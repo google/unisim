@@ -13,52 +13,43 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-
-from tqdm.auto import tqdm
-import numpy as np
-from pathlib import Path
 from abc import ABC, abstractmethod
-
-from .. import backend as B
+from pathlib import Path
 
 # typing
-from typing import Tuple, Any, Sequence
-from ..types import BatchGlobalEmbeddings
-from ..types import BatchPartialEmbeddings, BatchEmbeddings
+from typing import Any, Sequence, Tuple
+
+import numpy as np
+
+from .. import backend as B
+from ..types import BatchEmbeddings, BatchGlobalEmbeddings, BatchPartialEmbeddings
 
 
 class Embedder(ABC):
     "Convert inputs to embeddings suitable for indexing"
 
-    def __init__(self,
-                 batch_size: int,
-                 modality: str,
-                 model_version: int,
-                 verbose: int = 0) -> None:
+    def __init__(self, batch_size: int, model_id: str, verbose: int = 0) -> None:
         self.batch_size = batch_size
-        self.modality = modality
-        self.model_version = model_version
-        self.model_fname = f'unisim_{modality}_v{model_version}'
+        self.model_id = model_id
+        self.verbose = verbose
 
-        # fixme load ondemand from the internet
-        # find the model path
+        # TODO (marinazh): host on cloud and download when needed instead
         fpath = Path(__file__)
-        model_path = fpath.parent / 'models' / self.model_fname
+        model_path = fpath.parent / "models" / self.model_id
 
-        # load model
-        if verbose:
-            print('[Loading model]')
-            print(f'|-batch_size:{batch_size}')
-            print(f'|-modality:{modality}')
-            print(f'|-version:{model_version}')
+        if self.verbose:
+            print("[Loading model]")
+            print(f"|-model_id: {model_id}")
 
-        # load model
         self.model = B.load_model(model_path, verbose=verbose)
 
+    @property
     @abstractmethod
-    def batch_compute_embeddings(self, inputs: Sequence[Any]
-                                 ) -> Tuple[BatchGlobalEmbeddings,
-                                            BatchPartialEmbeddings]:
+    def embedding_size(self):
+        return NotImplementedError
+
+    @abstractmethod
+    def embed(self, inputs: Sequence[Any]) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
         """Compute embeddings for a batch of inputs
 
         Args:
@@ -69,17 +60,12 @@ class Embedder(ABC):
         """
         raise NotImplementedError
 
-    def predict(self, data) -> BatchEmbeddings:
+    def predict(self, data: Sequence[Any]) -> BatchEmbeddings:
         "Run inference using the loaded model with the right framework"
         embeddings = []
-        dlen = len(data)
-        pb = tqdm(total=dlen, desc="Computing partial embeddings",
-                  unit='embeddings')
         for idx in range(0, len(data), self.batch_size):
-            batch = data[idx:idx+self.batch_size]
+            batch = data[idx : idx + self.batch_size]
             batch_embs = B.predict(self.model, batch=batch)
             embeddings.extend(batch_embs)
-            pb.update(batch_embs.shape[0])
         embeddings = np.asanyarray(embeddings)
-        pb.close()
         return embeddings
