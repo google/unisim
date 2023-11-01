@@ -60,7 +60,7 @@ class Embedder(ABC):
         """
         raise NotImplementedError
 
-    def predict(self, data) -> BatchEmbeddings:
+    def predict(self, data: Sequence[Any]) -> BatchEmbeddings:
         "Run inference using the loaded model with the right framework"
         embeddings = []
         for idx in range(0, len(data), self.batch_size):

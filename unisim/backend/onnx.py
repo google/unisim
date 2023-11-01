@@ -15,6 +15,7 @@
  """
 
 from pathlib import Path
+from typing import Any, Dict, Sequence
 
 import numpy as np
 from onnxruntime import InferenceSession
@@ -45,17 +46,14 @@ _providers = [
 
 def load_model(path: Path, verbose: int = 0):
     # specialize path
-    if str(path).endswith("onnx"):
-        mpath = path
-    else:
-        mpath = str(path) + ".onnx"
+    mpath = str(path.with_suffix(".onnx"))
     if verbose:
         print(f"|-model path: {mpath}")
 
     sess = InferenceSession(mpath, providers=_providers)
 
     # getting input/output info dynamically
-    model = {
+    model_dict = {
         "sess": sess,
         "input_name": sess.get_inputs()[0].name,
         "input_shape": sess.get_inputs()[0].shape,
@@ -66,12 +64,12 @@ def load_model(path: Path, verbose: int = 0):
     }
 
     if verbose:
-        print(f'|-input: {model["input_shape"]}, {model["input_type"]}')
-        print(f'|-output: {model["output_shape"]}, {model["output_type"]}')
+        print(f'|-input: {model_dict["input_shape"]}, {model_dict["input_type"]}')
+        print(f'|-output: {model_dict["output_shape"]}, {model_dict["output_type"]}')
 
-    return model
+    return model_dict
 
 
-def predict(model, batch) -> BatchEmbeddings:
-    out = model["sess"].run([model["output_name"]], {model["input_name"]: batch})
+def predict(model_dict: Dict[str, Any], batch: Sequence[Any]) -> BatchEmbeddings:
+    out = model_dict["sess"].run([model_dict["output_name"]], {model_dict["input_name"]: batch})
     return np.asanyarray(out[0])

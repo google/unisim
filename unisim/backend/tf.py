@@ -15,8 +15,10 @@
  """
 
 from pathlib import Path
+from typing import Any, Sequence
 
 import tensorflow as tf
+from tensorflow.keras import Model
 
 # typing
 from ..types import BatchDistances2D, BatchEmbeddings
@@ -46,6 +48,6 @@ def load_model(path: Path, verbose: int = 0):
     return model
 
 
-def predict(model, batch) -> BatchEmbeddings:
+def predict(model: Model, batch: Sequence[Any]) -> BatchEmbeddings:
     # add strategy here
     return model(batch, training=False)

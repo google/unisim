@@ -41,22 +41,9 @@ def binarize_str(
     docid: int,
     chunk_size: int = 512,
     last_chunk_min_size: int = 256,
-    cleanup: bool = True,
-    lowercase: bool = False,
 ):
-    if lowercase:
-        txt = txt.lower()
-
     # binarize
-    if cleanup:
-        # note: we use token2bin because we hope to leverage caching per token
-        words = txt.split()
-        bins = []
-        for w in words[:-1]:
-            bins.extend(token2bin(w, add_space=True))
-        bins.extend(token2bin(words[-1], add_space=False))  # don't add space to last word
-    else:
-        bins = [char2bin(c) for c in txt]
+    bins = [char2bin(c) for c in txt]
 
     # remove last chunk if too small
     lbin = len(bins)
@@ -84,8 +71,6 @@ def binarizer(
     txts: Sequence[AnyStr],
     chunk_size: int = 512,
     last_chunk_min_size: int = 256,
-    cleanup: bool = True,
-    lowercase: bool = False,
 ):
     inputs = []
     chunk_ids = []
@@ -96,8 +81,6 @@ def binarizer(
             docid=docid,
             chunk_size=chunk_size,
             last_chunk_min_size=last_chunk_min_size,
-            cleanup=cleanup,
-            lowercase=lowercase,
         )
         inputs.extend(arr)
         current_chunks_ids = list(range(chunk_ids_cursor, chunk_ids_cursor + num_chunks))
