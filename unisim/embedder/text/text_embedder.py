@@ -32,18 +32,11 @@ class TextEmbedder(Embedder):
     def __init__(self, batch_size: int, model_id: str = "text/retsim/v1", verbose: int = 0) -> None:
         # model loading is handled in the super
         super().__init__(batch_size=batch_size, model_id=model_id, verbose=verbose)
-
-        # TODO (marinazh): change to be dependent on model, too brittle
-        self._chunk_size = 512
         self._embedding_size = 256
 
     @property
     def embedding_size(self):
         return self._embedding_size
-
-    @property
-    def chunk_size(self):
-        return self._chunk_size
 
     def embed(
         self,

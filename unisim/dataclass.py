@@ -23,17 +23,14 @@ from typing import Any, List
 @dc.dataclass
 class Match:
     idx: int
-    global_rank: int | None = None
-    global_similarity: float | None = None
-
-    partial_rank: int | None = None
-    partial_similarity: float | None = None
-
-    is_global_match: bool = False
-    is_partial_match: bool = False
+    rank: int | None = None
+    similarity: float | None = None
+    is_match: bool = False
 
     # store data
     data: Any = dc.field(default=None)
+
+    # TODO (marinazh): allow metadata?
 
     # TODO (marinazh): add in partial match positions
     # partial_target_match_position: int = 0
@@ -45,26 +42,22 @@ class Match:
 class Result:
     query_idx: int
     query: str = ""
-    num_global_matches: int = 0
-    num_partial_matches: int = 0
+    num_matches: int = 0
     matches: List[Match] = dc.field(default_factory=lambda: [])
 
 
 @dc.dataclass
 class ResultCollection:
-    total_global_matches: int = 0
-    total_partial_matches: int = 0
+    total_matches: int = 0
     results: List[Result] = dc.field(default_factory=lambda: [])
 
     def __repr__(self) -> str:
         res = "-[Results Statistics]-\n"
         res += f"Number of Results: {len(self.results)}\n"
-        res += f"Total Global Matches: {self.total_global_matches}\n"
-        res += f"Total Partial Matches: {self.total_partial_matches}"
+        res += f"Total Matches: {self.total_matches}\n"
         return res
 
     def merge_result_collection(self, other: ResultCollection) -> ResultCollection:
-        self.total_global_matches += other.total_global_matches
-        self.total_partial_matches += other.total_partial_matches
+        self.total_matches += other.total_matches
         self.results.extend(other.results)
         return self

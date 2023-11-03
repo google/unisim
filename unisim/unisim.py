@@ -24,16 +24,14 @@ from .dataclass import ResultCollection
 from .embedder import Embedder
 from .enums import AcceleratorType, IndexerType
 from .indexer import Indexer
-from .types import BatchGlobalEmbeddings, BatchPartialEmbeddings
-from .utils import flatten_partial_embeddings
+from .types import BatchEmbeddings
 
 
 class UniSim(ABC):
     def __init__(
         self,
         store_data: bool,
-        global_threshold: float,
-        partial_threshold: float,
+        similarity_threshold: float,
         index_type: str | IndexerType,
         batch_size: int,
         use_accelerator: bool,
@@ -43,8 +41,7 @@ class UniSim(ABC):
         verbose: int = 0,
     ) -> None:
         self.store_data = store_data
-        self.global_threshold = global_threshold
-        self.partial_threshold = partial_threshold
+        self.similarity_threshold = similarity_threshold
         self.index_type = index_type if isinstance(index_type, IndexerType) else IndexerType[index_type]
         self.batch_size = batch_size
         self.use_accelerator = use_accelerator
@@ -65,11 +62,11 @@ class UniSim(ABC):
             self.use_accelerator = False
 
         # internal state
-        self.global_index_size = 0  # track idxs as we have two indexers
+        self.index_size = 0
         self.is_initialized: bool = False
         self.indexed_data = []
 
-    def _lazy_init(self):
+    def _lazy_init(self) -> None:
         "Lazily init models and indexers"
         # check we don't initialize indexer twice
         if self.is_initialized:
@@ -80,8 +77,7 @@ class UniSim(ABC):
         self.indexer = Indexer(
             embedding_size=self.embedding_size,
             index_type=self.index_type,
-            global_threshold=self.global_threshold,
-            partial_threshold=self.partial_threshold,
+            similarity_threshold=self.similarity_threshold,
             params=self.index_params,
         )
         self.is_initialized = True
@@ -89,7 +85,7 @@ class UniSim(ABC):
     def embed(
         self,
         inputs: Sequence[Any],
-    ) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
+    ) -> BatchEmbeddings:
         self._lazy_init()
         ges_results = []
         pes_results = []
@@ -109,10 +105,8 @@ class UniSim(ABC):
         batch = [input1, input2]
         ge, _ = self.embed(batch)
 
-        print(ge)
-        # compute global similarity
+        # compute similarity
         similarity = B.cosine_similarity(ge, ge)
-        print(similarity)
         similarity = np.asanyarray(similarity[0][1])
 
         # clip sometimes for floating point error
@@ -121,54 +115,50 @@ class UniSim(ABC):
         return similarity
 
     # indexing
-    def add(self, inputs: Sequence[Any]) -> Sequence[int]:
+    def add(self, inputs: Sequence[Any], metadata: Sequence[Any] | None = None) -> Sequence[int]:
         ges_idxs = []
         for b_offset in range(0, len(inputs), self.batch_size):
             batch = inputs[b_offset : b_offset + self.batch_size]
-            ges, bpes = self.embed(batch)
+            embs = self.embed(batch)
 
-            # compute the new global idxs
-            idxs = [i + self.global_index_size for i in range(len(ges))]
-            self.global_index_size += len(idxs)
+            # compute the new idxs
+            idxs = [i + self.index_size for i in range(len(embs))]
+            self.index_size += len(idxs)
 
-            # flatten partial embeddings and maps them to global idxs
-            fpes, pes_idxs = flatten_partial_embeddings(bpes, idxs)
-
-            # indexing global and partials
-            self.indexer.add(ges, idxs, fpes, pes_idxs)
+            # indexing embeddings
+            self.indexer.add(embs, idxs)
 
             # store inputs if requested
             if self.store_data:
                 self.indexed_data.extend(batch)
 
-            # store the global idxs
+            # store the idxs
             ges_idxs.extend(idxs)
         return ges_idxs
 
-    def search(self, inputs: Sequence[Any], gk: int = 5, pk: int = 5):
+    def search(self, inputs: Sequence[Any], k: int = 1):
         results = ResultCollection()
         for b_offset in range(0, len(inputs), self.batch_size):
             batch = inputs[b_offset : b_offset + self.batch_size]
-            gqe, pqe = self.embed(batch)
-
-            fpqe, _ = flatten_partial_embeddings(pqe)
+            embs = self.embed(batch)
 
             r = self.indexer.search(
-                global_query_embeddings=gqe,
-                partial_query_embeddings=fpqe,
-                gk=gk,
-                pk=pk,
-                return_data=self.store_data,
                 queries=batch,
+                query_embeddings=embs,
+                k=k,
+                return_data=self.store_data,
                 data=self.indexed_data,
             )
             results.merge_result_collection(r)
 
         return results
 
+    def match(self, queries: Sequence[Any], targets: Sequence[Any]):
+        raise NotImplementedError
+
     def reset_index(self):
         self._lazy_init()
-        self.global_index_size = 0
+        self.index_size = 0
         self.indexer.reset()
         self.indexed_data = []
 
@@ -185,12 +175,9 @@ class UniSim(ABC):
         print(f"|-use_accelerator: {self.use_accelerator}")
         print(f"|-store index data: {self.store_data}")
 
-    def dedup(self, inputs: Sequence[Any]):
-        raise NotImplementedError
-
-    def save(self, filepath: str):
+    def save(self, path: str):
         # ! DON't FORGET TO save inputs or move it to rockdb
         raise NotImplementedError
 
-    def load(self, filepath: str):
+    def load(self, path: str):
         raise NotImplementedError

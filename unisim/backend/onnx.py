@@ -24,7 +24,7 @@ from onnxruntime import InferenceSession
 from ..types import BatchDistances2D, BatchEmbeddings
 
 
-def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> BatchDistances2D:
+def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> Batc:
     """Compute cosine similarity between embeddings
 
     Args:

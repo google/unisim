@@ -15,7 +15,7 @@
  """
 from __future__ import annotations
 
-from typing import Union
+from typing import List, Union
 
 from jaxtyping import Float32, Int64
 from numpy import ndarray
@@ -23,22 +23,10 @@ from tensorflow import Tensor
 
 Array = Union[Tensor, ndarray]
 
-# any embeddinsg
-TensorEmbedding = Float32[Array, "embedding"]
-BatchEmbeddings = Float32[Array, "batch embedding"]
-
-# global
-GlobalEmbedding = Float32[Array, "embedding"]
-BatchGlobalEmbeddings = Float32[Array, "batch embedding"]
-
-# partial embeddings
-PartialEmbedding = Float32[Array, "embedding"]
-PartialEmbeddings = Float32[Array, "chunk embedding"]
-BatchPartialEmbeddings = Float32[Array, "batch chunk embedding"]
+# Embeddings
+Embedding = Float32[Array, "embedding"]
+BatchEmbeddings = Float32[Array, "batch embeddings"]
 
 # distances
-BatchDistances = Float32[Array, "batch"]
-BatchDistances2D = Float32[Array, "batch batch"]
-
-# indexes
-BatchIndexes = Int64[Array, "batch"]
+BatchSimilarities = Float32[Array, "batch similarities"]
+BatchSimilarities2D = Float32[Array, "batch similarities 2D"]
