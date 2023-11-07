@@ -19,6 +19,7 @@ from ..config import get_accelerator, get_backend, set_accelerator, set_backend
 from ..enums import AcceleratorType, BackendType
 
 TF_AVAILABLE = False
+
 # override existing setting to allow reload
 if "BACKEND" in os.environ:
     bs = os.environ["BACKEND"]
@@ -40,8 +41,6 @@ elif not get_backend() or get_backend() == BackendType.unknown:
 
 # detect accelerator
 if TF_AVAILABLE or get_backend() == BackendType.tf:
-    # FIXME detect multi
-    # detecting which devices we are using
     devices_types = [d.device_type for d in tf.config.list_physical_devices()]
 
     if "GPU" in devices_types:
@@ -52,21 +51,23 @@ if TF_AVAILABLE or get_backend() == BackendType.tf:
 else:
     set_accelerator(AcceleratorType.cpu)
 
-# choose backend
+# choose backend if not set by user
 accel = get_accelerator()
 backend = get_backend()
-if backend != BackendType.unknown:
-    # backend forced by the user
-    pass
-elif accel == AcceleratorType.cpu:
-    # on CPU always onnx
-    set_backend(BackendType.onnx)
-elif TF_AVAILABLE:
-    # potentially revisit
-    set_backend(BackendType.tf)
-else:
-    # default to onnx
-    set_backend(BackendType.onnx)
+
+if "BACKEND" not in os.environ:
+    if backend != BackendType.unknown:
+        # backend forced by the user
+        pass
+    elif accel == AcceleratorType.cpu:
+        # on CPU always onnx
+        set_backend(BackendType.onnx)
+    elif TF_AVAILABLE:
+        # on GPU use TF by default
+        set_backend(BackendType.tf)
+    else:
+        # if TensorFlow not available
+        set_backend(BackendType.onnx)
 
 # post detection
 if get_backend() == BackendType.onnx:
@@ -76,7 +77,7 @@ if get_backend() == BackendType.onnx:
     set_accelerator(AcceleratorType.cpu)
 
 elif get_backend() == BackendType.tf:
-    from .tf import *  # noqa: F403, F401
+    from .tf import *  # type: ignore # noqa: F403, F401
 
     # ensure we are not running out of memory
     gpus = tf.config.list_physical_devices("GPU")

@@ -15,9 +15,9 @@
  """
 from __future__ import annotations
 
-from typing import List, Union
+from typing import Union
 
-from jaxtyping import Float32, Int64
+from jaxtyping import Float32
 from numpy import ndarray
 from tensorflow import Tensor
 
@@ -26,7 +26,3 @@ Array = Union[Tensor, ndarray]
 # Embeddings
 Embedding = Float32[Array, "embedding"]
 BatchEmbeddings = Float32[Array, "batch embeddings"]
-
-# distances
-BatchSimilarities = Float32[Array, "batch similarities"]
-BatchSimilarities2D = Float32[Array, "batch similarities 2D"]

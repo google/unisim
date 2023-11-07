@@ -15,20 +15,27 @@
  """
 from abc import ABC, abstractmethod
 from pathlib import Path
-
-# typing
-from typing import Any, Sequence, Tuple
+from typing import Any, List, Sequence, Union
 
 import numpy as np
 
 from .. import backend as B
-from ..types import BatchEmbeddings, BatchGlobalEmbeddings, BatchPartialEmbeddings
+from ..types import BatchEmbeddings
 
 
 class Embedder(ABC):
-    "Convert inputs to embeddings suitable for indexing"
+    """Abstract base class for embedding inputs into vectors."""
 
     def __init__(self, batch_size: int, model_id: str, verbose: int = 0) -> None:
+        """Initialize an Embedder based on a model.
+
+        Args:
+            batch_size: Batch size for inference.
+
+            model_id: ID of model.
+
+            verbose: Verbosity mode.
+        """
         self.batch_size = batch_size
         self.model_id = model_id
         self.verbose = verbose
@@ -46,26 +53,27 @@ class Embedder(ABC):
     @property
     @abstractmethod
     def embedding_size(self):
+        """Returns the embedding size of the model."""
         return NotImplementedError
 
     @abstractmethod
-    def embed(self, inputs: Sequence[Any]) -> Tuple[BatchGlobalEmbeddings, BatchPartialEmbeddings]:
-        """Compute embeddings for a batch of inputs
+    def embed(self, inputs: Sequence[Any]) -> BatchEmbeddings:
+        """Compute embeddings for a batch of inputs.
 
         Args:
-            input:s the list modality input to be embedded
+            inputs: Sequence of inputs to embed.
+
         Returns:
-            Tuple[Embedding, Embeddings]: Inputs global embeddings,
-            Input chunk embeddings (num_inputs, embedding_dim)
+            Embeddings for each input in `inputs`.
         """
         raise NotImplementedError
 
-    def predict(self, data: Sequence[Any]) -> BatchEmbeddings:
+    def predict(self, data: Union[Sequence[Any], np.ndarray]) -> BatchEmbeddings:
         "Run inference using the loaded model with the right framework"
-        embeddings = []
+        embeddings: List[np.ndarray] = []
         for idx in range(0, len(data), self.batch_size):
             batch = data[idx : idx + self.batch_size]
             batch_embs = B.predict(self.model, batch=batch)
             embeddings.extend(batch_embs)
-        embeddings = np.asanyarray(embeddings)
-        return embeddings
+        embeddings_array: BatchEmbeddings = np.asanyarray(embeddings)
+        return embeddings_array

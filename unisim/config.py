@@ -30,10 +30,6 @@ def floatx():
 
     Returns:
         str: the current default float type.
-
-    Example:
-    >>> B.floatx()
-    'float32'
     """
     return _FLOATX
 
@@ -46,16 +42,6 @@ def set_floatx(value):
 
     Args:
         value (str): `'float16'`, `'float32'`, or `'float64'`.
-
-    Example:
-    >>> evoflow.backend.floatx()
-    'float32'
-    >>> evoflow.backend.set_floatx('float64')
-    >>> evoflow.backend.floatx()
-    'float64'
-    >>> evoflow.backend.set_floatx('float32')
-    Raises:
-        ValueError: In case of invalid value.
     """
     global _FLOATX
     if value not in {"float16", "float32", "float64"}:
@@ -70,10 +56,6 @@ def intx():
 
     Returns:
         str: the current default int type.
-
-    Example:
-    >>> B.intx()
-    'int32'
     """
     return _INTX
 
@@ -84,16 +66,6 @@ def set_intx(value):
     Args:
         value (str): default int type to use.
         One of `{'int8', 'uint8', 'int16', 'uint16', 'int32', 'int64'}`
-
-    Example:
-    >>> evoflow.backend.intx()
-    'int32'
-    >>> evoflow.set_intx('uint8')
-    >>> evoflow.backend.intx()
-    'uint8'
-    >>> evoflow.intx('float132')
-    Raises:
-        ValueError: In case of invalid value.
     """
     global _INTX
     if value not in {"int8", "uint8", "int16", "uint16", "int32", "int64"}:
@@ -115,21 +87,20 @@ def set_accelerator(acc: AcceleratorType):
 
 # backend
 def get_backend() -> BackendType:
-    "Return the backend used"
+    """Return the UniSim backend currently in use."""
     return _BACKEND
 
 
 def set_backend(backend: BackendType):
-    """Set UniSim backend to a given framework
+    """Set UniSim backend to a given framework.
 
     Args:
-        name(str): Name of the backend. {onnx, tensorflow}. Favors Tensorflow
-        if available and default to onnx.
+        name: Name of the backend, one of {onnx, tensorflow}. Favors Tensorflow
+        if available or on GPU, and defaults to Onnx for CPU inference.
 
     Notes:
-        Backend name check is done is `load_backend.py`
-    See:
-        `load_backend.py` for the actual loading code.
+        Backend name check is done is `load_backend.py`,
+        see `load_backend.py` for the actual loading code.
     """
     global _BACKEND
     _BACKEND = backend

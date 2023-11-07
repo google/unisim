@@ -15,25 +15,27 @@
  """
 
 from pathlib import Path
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Sequence, Union
 
 import numpy as np
 from onnxruntime import InferenceSession
 
-# typing
-from ..types import BatchDistances2D, BatchEmbeddings
+from ..types import BatchEmbeddings
 
 
-def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> Batc:
-    """Compute cosine similarity between embeddings
+def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> np.ndarray:
+    """Compute cosine similarity between embeddings using numpy.
 
     Args:
-        query_embeddings: embeddings of the content to be searched
-        index_embeddings: embeddings of the indexed content
+        query_embeddings: Embeddings of the content to be searched.
+
+        index_embeddings: Embeddings of the indexed content.
+
     Returns:
-        distances: matrix of distances
+        Matrix of cosine similarity values.
     """
-    return np.dot(query_embeddings, index_embeddings.T)
+    similarity: np.ndarray = np.dot(query_embeddings, index_embeddings.T)
+    return similarity
 
 
 # ONNX
@@ -44,7 +46,17 @@ _providers = [
 ]
 
 
-def load_model(path: Path, verbose: int = 0):
+def load_model(path: Path, verbose: int = 0) -> Dict[str, Any]:
+    """Helper function to load Onnx model.
+
+    Args:
+        path: Path to the saved .onnx model.
+
+        verbose: Print model details if verbose.
+
+    Returns:
+        Dict containing Onnx model session, input and output.
+    """
     # specialize path
     mpath = str(path.with_suffix(".onnx"))
     if verbose:
@@ -70,6 +82,16 @@ def load_model(path: Path, verbose: int = 0):
     return model_dict
 
 
-def predict(model_dict: Dict[str, Any], batch: Sequence[Any]) -> BatchEmbeddings:
+def predict(model_dict: Dict[str, Any], batch: Union[Sequence[Any], np.ndarray]) -> BatchEmbeddings:
+    """Predict using Onnx model dictionary loaded from load_model().
+
+    Args:
+        model_dict: Model loaded using load_model().
+
+        batch: Batch of inputs to generate predictions.
+
+    Returns:
+        Batch of embeddings generated from inputs
+    """
     out = model_dict["sess"].run([model_dict["output_name"]], {model_dict["input_name"]: batch})
     return np.asanyarray(out[0])

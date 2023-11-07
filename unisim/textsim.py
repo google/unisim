@@ -13,11 +13,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, List, Sequence
 
 from tabulate import tabulate
 
-from .dataclass import Result
+from .dataclass import Result, ResultCollection
 from .embedder import TextEmbedder
 from .enums import IndexerType
 from .types import BatchEmbeddings
@@ -28,14 +28,14 @@ class TextSim(UniSim):
     def __init__(
         self,
         store_data: bool = True,
-        similarity_threshold: float = 0.9,
         index_type: str | IndexerType = "exact",
+        return_embeddings: bool = True,
         batch_size: int = 128,
         use_accelerator: bool = True,
         model_id: str = "text/retsim/v1",
         index_params: Dict[str, Any] | None = None,
         verbose: int = 0,
-    ) -> None:
+    ):
         embedder = TextEmbedder(
             batch_size=batch_size,
             model_id=model_id,
@@ -43,8 +43,8 @@ class TextSim(UniSim):
         )
         super().__init__(
             store_data=store_data,
-            similarity_threshold=similarity_threshold,
             index_type=index_type,
+            return_embeddings=return_embeddings,
             batch_size=batch_size,
             use_accelerator=use_accelerator,
             model_id=model_id,
@@ -53,17 +53,20 @@ class TextSim(UniSim):
             verbose=verbose,
         )
 
-    def similarity(self, input_1: str, input_2: str) -> float:
-        return super().similarity(input_1, input_2)
+    def similarity(self, input1: str, input2: str) -> float:
+        return super().similarity(input1=input1, input2=input2)
+
+    def match(self, queries: Sequence[Any], targets: Sequence[Any]):
+        return super().match(queries=queries, targets=targets)
 
     def embed(self, inputs: Sequence[str]) -> BatchEmbeddings:
         return super().embed(inputs=inputs)
 
-    def add(self, inputs: Sequence[str]) -> Sequence[int]:
+    def add(self, inputs: Sequence[str]) -> List[int]:
         return super().add(inputs=inputs)
 
-    def search(self, inputs: Sequence[str], k: int = 1):
-        return super().search(inputs=inputs, k=k)
+    def search(self, inputs: Sequence[str], similarity_threshold: float = 0.9, k: int = 1) -> ResultCollection:
+        return super().search(inputs=inputs, similarity_threshold=similarity_threshold, k=k)
 
     def visualize(self, result: Result, max_display_chars: int = 32):
         rows = []
@@ -75,8 +78,8 @@ class TextSim(UniSim):
             # build row
             row = [m.idx, m.is_match, sim, content]
             rows.append(row)
-        if result.query:
-            print(f'Query {result.query_idx}: "{result.query}"')
+        if result.query_data:
+            print(f'Query {result.query_idx}: "{result.query_data}"')
         else:
             print(f"Query {result.query_idx}")
         print(tabulate(rows, headers=["idx", "is_match", "similarity", "content"]))

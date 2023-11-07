@@ -14,13 +14,13 @@
  limitations under the License.
  """
 
-# - shared function --
-# ! Dont import loader related funciton here - will break everything
-# ! instead if needed (like set_backend()) put then in root __init__.py
+# -- shared function --
+# ! don't import loader-related functions here - will break
+# ! instead, if needed (like set_backend()) put them in root __init__.py
 from ..config import floatx  # noqa: F401
 from ..config import intx  # noqa: F401
 from ..config import set_floatx  # noqa: F401
 from ..config import set_intx  # noqa: F401
 
-# - backend specific -
+# -- backend specific --
 from .load_backend import cosine_similarity, load_model, predict  # noqa: F401

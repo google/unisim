@@ -26,7 +26,6 @@ def test_basic_properties():
 def test_embed_short_str():
     s = "This is a test. 😀"
     embedder = TextEmbedder(batch_size=BATCH_SIZE)
-
     embs = embedder.embed([s])
     assert embs[0].shape == (256,)
 
@@ -34,7 +33,5 @@ def test_embed_short_str():
 def test_embed_long_str():
     s = "s" * 1030
     embedder = TextEmbedder(batch_size=BATCH_SIZE)
-
-    global_embs = embedder.embed([s])
-
-    assert global_embs[0].shape == (256,)
+    embs = embedder.embed([s])
+    assert embs[0].shape == (256,)
