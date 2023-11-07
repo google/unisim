@@ -71,7 +71,7 @@ class UniSim(ABC):
             embedder: Embedder object which converts inputs into embeddings using
                 a model.
 
-            params: Additional parameters to be passed into USearch Index,
+            params: Additional parameters to be passed into the Indexer,
                 only used when index_type is approx, for ANN search. Supported
                 dict keys include {metric, dtype, connectivity, expansion_add,
                 expansion_search}, please see the USearch Index documentation
@@ -124,7 +124,7 @@ class UniSim(ABC):
         self,
         inputs: Sequence[Any],
     ) -> BatchEmbeddings:
-        """Compute embeddings for a batch of inputs.
+        """Compute embeddings for inputs.
 
         Args:
             inputs: Sequence of inputs to embed.
@@ -202,14 +202,14 @@ class UniSim(ABC):
         near-duplicate matches.
 
         Args:
-            inputs: Query inputs for the search.
+            inputs: Query inputs to search for.
 
             similarity_threshold: Similarity threshold for near-duplicate
                 match, where a query and a search result are considered
                 near-duplicate matches if their similarity is higher than
                 `similarity_threshold`.
 
-            k: Number of nearest neighbors to lookup.
+            k: Number of nearest neighbors to lookup for each query input.
 
         Returns
             result_collection: ResultCollection containing the search results.

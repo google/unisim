@@ -77,7 +77,7 @@ class Indexer:
             # initializing the USearch ANN index
             self.index = Index(
                 ndim=self.embedding_size,
-                metric=params.get("metric", "ip"),
+                metric="ip",
                 dtype=params.get("dtype", "f32"),
                 connectivity=params.get("connectivity", 16),
                 expansion_add=params.get("expansion_add", 128),
