@@ -46,7 +46,7 @@ setup(
     author_email="unisim@google.com",
     url="https://github.com/google/unisim",
     license="Apache License 2.0",
-    install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime", "pandas"],
+    install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime", "pandas", "usearch>=2.6.0"],
     extras_require={
         "tensorflow": ["tensorflow>=2.11"],
         "dev": [
