@@ -40,19 +40,17 @@ long_description = read("README.md")
 setup(
     name="unisim",
     version=get_version("unisim/__init__.py"),
-    description="Universal Similarity",
+    description="UniSim: Universal Similarity",
     long_description=long_description,
     author="Google",
     author_email="unisim@google.com",
     url="https://github.com/google/unisim",
     license="Apache License 2.0",
-    install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime"],
+    install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime", "pandas", "usearch>=2.6.0"],
     extras_require={
         "tensorflow": ["tensorflow>=2.11"],
         "dev": [
             "datasets",
-            "tokenizers",
-            "google-cloud-storage",
             "mypy",
             "pytest",
             "flake8",

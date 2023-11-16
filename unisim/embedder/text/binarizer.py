@@ -14,7 +14,7 @@
  limitations under the License.
  """
 from functools import cache
-from typing import AnyStr, Sequence
+from typing import List, Sequence, Tuple
 
 import numpy as np
 
@@ -22,14 +22,14 @@ PAD = [0.0] * 24
 
 
 @cache
-def char2bin(chr: str) -> Sequence[float]:
+def char2bin(chr: str) -> List[float]:
     cp = ord(chr)
     v = format(cp, "#026b")
     return [float(b) for b in v[2:]]
 
 
 @cache
-def token2bin(word: str, add_space: bool = True) -> Sequence[float]:
+def token2bin(word: str, add_space: bool = True) -> List[List[float]]:
     "convert a word"
     if add_space:
         word += " "
@@ -37,7 +37,7 @@ def token2bin(word: str, add_space: bool = True) -> Sequence[float]:
 
 
 def binarize_str(
-    txt: AnyStr,
+    txt: str,
     docid: int,
     chunk_size: int = 512,
     last_chunk_min_size: int = 256,
@@ -68,19 +68,28 @@ def binarize_str(
 
 
 def binarizer(
-    txts: Sequence[AnyStr],
+    txts: Sequence[str],
     chunk_size: int = 512,
     last_chunk_min_size: int = 256,
-):
+) -> Tuple[np.ndarray, List[List[int]]]:
+    """Binarize text using the RETVec chararcter encoder, as detailed in https://arxiv.org/abs/2302.09207.
+
+    Args:
+        txts: Input texts to binarize.
+
+        chunk_size: Chunk size in characters to break up the text.
+
+        last_chunk_min_size: Drop last chunk if it has less than `last_chunk_min_size` characters.
+
+    Returns:
+        Binarized text which is ready to be embedded using the RETSim embedding model.
+    """
     inputs = []
     chunk_ids = []
     chunk_ids_cursor = 0
     for docid, txt in enumerate(txts):
         arr, num_chunks, docid = binarize_str(
-            txt=txt,
-            docid=docid,
-            chunk_size=chunk_size,
-            last_chunk_min_size=last_chunk_min_size,
+            txt=txt, docid=docid, chunk_size=chunk_size, last_chunk_min_size=last_chunk_min_size
         )
         inputs.extend(arr)
         current_chunks_ids = list(range(chunk_ids_cursor, chunk_ids_cursor + num_chunks))
@@ -88,39 +97,5 @@ def binarizer(
         chunk_ids_cursor += num_chunks
 
     # stack
-    inputs = np.stack(inputs, axis=0)
-    return inputs, chunk_ids
-
-
-# def vectorized_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512, last_chunk_min_size: int = 16):
-#     inputs = []
-#     for docid, txt in enumerate(txts):
-#         arr, _, _ = binarize_str(
-#             txt=txt, docid=docid, chunk_size=chunk_size, last_chunk_min_size=last_chunk_min_size
-#         )  # noqa
-#         inputs.append(arr)
-
-#     doc_ids = list(range(len(inputs)))
-#     # TODO(ovallis): Convert to dense 3D array and pad with zeros.
-#     return inputs, doc_ids
-
-
-# TODO (marinazh): parallelize the binarizer for efficiency
-# def multi_binarizer(txts: Sequence[AnyStr], chunk_size: int = 512):
-#     # parallelize
-#     promises = []
-#     with futures.ProcessPoolExecutor() as executor:
-#         for docid, txt in enumerate(txts):
-#             promises.append(executor.submit(binarize_str, txt=txt, docid=docid, chunk_size=chunk_size))
-
-#         inputs = []
-#         docids = []
-#         for promise in futures.as_completed(promises):
-#             data = promise.result()
-#             arr, num_chunks, docid = data
-#             inputs.extend(arr)
-#             docids.append([docid] * num_chunks)
-
-#     # stack
-#     inputs = np.stack(inputs, axis=0)
-#     return inputs, docids
+    binarized_inputs: np.ndarray = np.stack(inputs, axis=0)
+    return binarized_inputs, chunk_ids

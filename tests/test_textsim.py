@@ -16,6 +16,7 @@
 import os
 from importlib import reload
 
+import pandas as pd
 import pytest
 
 import unisim
@@ -43,19 +44,19 @@ def set_test_backend(b):
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
 def test_textsim_similarity(backend_type, index_type):
     set_test_backend(b=backend_type)
-    usim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE, verbose=True)
+    tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE, verbose=True)
 
-    sim = usim.similarity("I love icecreams", "I love icecreams")
+    sim = tsim.similarity("I love icecreams", "I love icecreams")
     assert round(sim, 3) == 1
 
     test_str = "b" * 512 + "a" * 512
-    sim = usim.similarity(test_str, test_str)
+    sim = tsim.similarity(test_str, test_str)
     assert round(sim, 3) == 1
 
-    sim = usim.similarity("doubting dreams", "rough winds do shake the darling buds of may,")
+    sim = tsim.similarity("doubting dreams", "rough winds do shake the darling buds of may,")
     assert round(sim, 3) == 0.485
 
-    sim = usim.similarity("this is a test", "This is a test 😀")
+    sim = tsim.similarity("this is a test", "This is a test 😀")
     assert round(sim, 3) == 0.967
 
 
@@ -63,86 +64,82 @@ def test_textsim_similarity(backend_type, index_type):
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
 def test_textsim_embed(backend_type, index_type):
     set_test_backend(b=backend_type)
-    usim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
+    tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
 
-    global_embs, partial_embs = usim.embed(["This is a test"])
-    assert global_embs.shape == (1, 256)
-    assert len(partial_embs) == 1
-    assert partial_embs[0].shape == (1, 256)
+    embs = tsim.embed(["This is a test"])
+    assert embs.shape == (1, 256)
 
-    global_embs, partial_embs = usim.embed(["a" * 2000, "test"])
-    assert global_embs.shape == (2, 256)
-    assert len(partial_embs) == 2
-    assert partial_embs[0].shape == (4, 256)
-    assert partial_embs[1].shape == (1, 256)
+    embs = tsim.embed(["a" * 2000, "test"])
+    assert embs.shape == (2, 256)
 
 
 @pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
 def test_textsim_add(backend_type, index_type):
     set_test_backend(b=backend_type)
-    usim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
+    tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
 
     s1 = "This is a test"
     s2 = "a" * 2000
 
-    usim.add([s1])
-    usim.add([s1, s2, s2])
+    tsim.add([s1])
+    tsim.add([s1, s2, s2])
 
 
 @pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_search(backend_type, index_type):
+def test_textsim_basic_search_workflow(backend_type, index_type):
     set_test_backend(b=backend_type)
-    usim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
-    usim.info()
-    usim.reset_index()
+    tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
+    tsim.info()
+    tsim.reset_index()
 
     s1 = "This is a test"
     s2 = "a" * 2000
     s3 = "cookies"
     s4 = "cookies?"
-    usim.add([s1, s2, s3, s4])
+    tsim.add([s1, s2, s3, s4])
 
-    rc = usim.search([s3], gk=1, pk=1)
+    rc = tsim.search([s3], k=1)
     res_0 = rc.results[0]
-    usim.visualize(res_0)
+    tsim.visualize(res_0)
 
-    assert rc.total_global_matches == 1
-    assert rc.total_partial_matches == 1
-    assert res_0.num_global_matches, res_0.num_partial_matches == (1, 1)
+    assert rc.total_matches == 1
+    assert res_0.num_matches == 1
 
-    rc = usim.search([s3, s1], gk=5, pk=5)
+    rc = tsim.search([s3, s1], k=5)
     res_0 = rc.results[0]
     res_1 = rc.results[1]
-    usim.visualize(res_0)
+    tsim.visualize(res_0)
 
-    assert rc.total_global_matches == 3
-    assert rc.total_partial_matches == 3
-    assert res_0.num_global_matches, res_0.num_partial_matches == (1, 1)
-    assert res_1.num_global_matches, res_1.num_partial_matches == (2, 2)
+    assert rc.total_matches == 3
+    assert res_0.num_matches == 2
+    assert res_0.query_idx == 0
+    assert res_0.query_data == s3
+    assert res_0.query_embedding.shape == (256,)
+
+    assert res_1.num_matches == 1
     assert res_0.matches[0].idx == 2
     assert res_0.matches[1].idx == 3
     assert res_1.matches[0].idx == 0
+    assert res_1.matches[0].embedding.shape == (256,)
 
 
 @pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_partial_match(backend_type, index_type):
+def test_textsim_match(backend_type, index_type):
     set_test_backend(b=backend_type)
-    usim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
+    tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
+    queries = ["test", "This is a test", "cookies", "a" * 1024]
+    targets = ["this is a test! 😀", "COOKIES", "a" * 1024 + "b" * 256, "test"]
 
-    s1 = "This is a test"
-    s2 = "a" * 4096
-    s3 = "b" * 512 + "a" * 512
-    s4 = "a" * 512
+    df = tsim.match(queries=queries, targets=targets)
 
-    usim.add([s1, s2, s3])
-
-    rc = usim.search([s3], pk=20, gk=20)
-    assert rc.total_global_matches == 1
-    assert rc.total_partial_matches == 10
-
-    rc = usim.search([s4], pk=20, gk=20)
-    assert rc.total_global_matches == 0
-    assert rc.total_partial_matches == 9
+    expected_df = pd.DataFrame(
+        {
+            "Query": queries,
+            "Match": [targets[3], targets[0], targets[1], targets[2]],
+            "Similarity": [1.0000, 0.937122, 0.895018, 1.000000],
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected_df)
