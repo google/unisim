@@ -186,7 +186,6 @@ class Indexer:
                 result.query_embedding = query_embeddings[query_idx]
 
             for rank, m in enumerate(matches):
-
                 # drop closest match if set and increase the ranking of matches
                 if drop_closest_match:
                     if rank == 0:
