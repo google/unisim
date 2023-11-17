@@ -196,13 +196,15 @@ class UniSim(ABC):
             inputs_idxs.extend(idxs)
         return inputs_idxs
 
-    def search(self, inputs: Sequence[Any], similarity_threshold: float, k: int = 1) -> ResultCollection:
+    def search(
+        self, queries: Sequence[Any], similarity_threshold: float, k: int = 1, drop_closest_match: bool = False
+    ) -> ResultCollection:
         """Search for and return the k closest matches for a set of queries,
         and mark the ones that are closer than `similarity_threshold` as
         near-duplicate matches.
 
         Args:
-            inputs: Query inputs to search for.
+            queries: Query inputs to search for.
 
             similarity_threshold: Similarity threshold for near-duplicate
                 match, where a query and a search result are considered
@@ -211,12 +213,17 @@ class UniSim(ABC):
 
             k: Number of nearest neighbors to lookup for each query input.
 
+            drop_closest_match: If True, remove the closest match before returning
+                results. This is used when search queries == indexed set, since
+                each query's closest match will be itself if it was already added
+                to the index.
+
         Returns
             result_collection: ResultCollection containing the search results.
         """
         results = ResultCollection()
-        for b_offset in range(0, len(inputs), self.batch_size):
-            batch = inputs[b_offset : b_offset + self.batch_size]
+        for b_offset in range(0, len(queries), self.batch_size):
+            batch = queries[b_offset : b_offset + self.batch_size]
             embs = self.embed(batch)
 
             r = self.indexer.search(
@@ -224,6 +231,7 @@ class UniSim(ABC):
                 query_embeddings=embs,
                 similarity_threshold=similarity_threshold,
                 k=k,
+                drop_closest_match=drop_closest_match,
                 return_data=self.store_data,
                 return_embeddings=self.return_embeddings,
                 data=self.indexed_data,
@@ -232,7 +240,7 @@ class UniSim(ABC):
 
         return results
 
-    def match(self, queries: Sequence[Any], targets: Sequence[Any]) -> DataFrame:
+    def match(self, queries: Sequence[Any], targets: Sequence[Any] | None = None) -> DataFrame:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -240,18 +248,30 @@ class UniSim(ABC):
             queries: Input queries to search for.
 
             targets: Targets to search in, e.g. for each query, find the nearest
-                match in `targets`.
+                match in `targets`. If None, then `queries` is used as the
+                targets as well and matches are computed within a single list.
 
         Returns:
             Returns a pandas DataFrame with ["Query", "Match", "Similarity"]
             columns, representing each query, nearest match in `targets`, and
             their similarity value.
         """
+        # defaults if we have targets
+        drop_closest_match = False
+        k = 1
+
+        # if we are matching within the same list, drop the closest match
+        # since it will be the query itself
+        if not targets:
+            targets = queries
+            drop_closest_match = True
+            k = 2
+
         # add all targets
         self.add(targets)
 
         # search all queries, so it doesn't depend on similarity threshold
-        results = self.search(queries, similarity_threshold=0.0, k=1).results
+        results = self.search(queries, similarity_threshold=0.0, k=k, drop_closest_match=drop_closest_match).results
 
         # create pandas df
         data = []
