@@ -38,12 +38,8 @@ def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: Batch
     return similarity
 
 
-# ONNX
-_providers = [
-    ("CUDAExecutionProvider", {"enable_cuda_graph": "1"}),
-    "DmlExecutionProvider",  # directml windows
-    "CPUExecutionProvider",
-]
+# ONNX providers
+_providers = ["CPUExecutionProvider"]
 
 
 def load_model(path: Path, verbose: int = 0) -> Dict[str, Any]:

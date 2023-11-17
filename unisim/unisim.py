@@ -90,14 +90,14 @@ class UniSim(ABC):
         self.verbose = verbose
 
         if self.store_data:
-            print("UniSim is storing a copy of the indexed data")
-            print("If you are using large data corpus, consider disabling this behavior using store_data=False")
+            print("INFO: UniSim is storing a copy of the indexed data")
+            print("INFO: If you are using large data corpus, consider disabling this behavior using store_data=False")
         else:
-            print("UniSim is not storing a copy of the indexed data to save memory")
-            print("If you want to store a copy of the data, use store_data=True")
+            print("INFO: UniSim is not storing a copy of the indexed data to save memory")
+            print("INFO: If you want to store a copy of the data, use store_data=True")
 
         if use_accelerator and get_accelerator() == AcceleratorType.cpu:
-            print("Accelerator is not available, using cpu instead")
+            print("INFO: Accelerator is not available, using CPU")
             self.use_accelerator = False
 
         # internal state
