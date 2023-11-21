@@ -260,9 +260,10 @@ class UniSim(ABC):
                 `similarity_threshold`.
 
         Returns:
-            Returns a pandas DataFrame with ["Query", "Target", "Similarity"]
-            columns, representing each query, nearest match in `targets`, and
-            their similarity value.
+            Returns a pandas DataFrame with ["query", "target", "similarity", "is_match"]
+            columns, representing each query, nearest match in `targets`, their similarity
+            value, and whether or not they are a match (if their similarity >=
+            `similarity_threshold`).
         """
         # reset index
         self.reset_index()
