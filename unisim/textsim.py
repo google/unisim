@@ -151,18 +151,17 @@ class TextSim(UniSim):
         """
         return super().embed(inputs=inputs)
 
-    def add(self, inputs: Sequence[str], return_idxs: bool = False) -> List[int] | None:
+    def add(self, inputs: Sequence[str]) -> List[int]:
         """Embed and add inputs to the index.
 
         Args:
             inputs: Inputs to embed and add to the index.
-            return_idxs: Whether to return the idxs of the inputs added.
 
         Returns:
              idxs: Indices corresponding to the inputs added to the index,
              where idxs[0] is the idx for inputs[0] in the index.
         """
-        return super().add(inputs=inputs, return_idxs=return_idxs)
+        return super().add(inputs=inputs)
 
     def search(
         self, queries: Sequence[str], similarity_threshold: float = 0.9, k: int = 1, drop_closest_match: bool = False

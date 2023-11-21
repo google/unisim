@@ -166,13 +166,11 @@ class UniSim(ABC):
 
         return float(similarity)
 
-    def add(self, inputs: Sequence[Any], return_idxs: bool = False) -> List[int] | None:
+    def add(self, inputs: Sequence[Any]) -> List[int]:
         """Add inputs to the index.
 
         Args:
             inputs: Inputs to embed and add to the index.
-
-            return_idxs: Whether to return the idxs of the inputs added.
 
         Returns:
              idxs: Indices corresponding to the inputs added to the index,
@@ -197,8 +195,7 @@ class UniSim(ABC):
             # store the idxs corresponding to inputs
             inputs_idxs.extend(idxs)
 
-        if return_idxs:
-            return inputs_idxs
+        return inputs_idxs
 
     def search(
         self, queries: Sequence[Any], similarity_threshold: float, k: int = 1, drop_closest_match: bool = False
@@ -293,7 +290,7 @@ class UniSim(ABC):
             query = queries[i]
             match = results[i].matches[0]
             similarity = match.similarity
-            is_match = similarity >= similarity_threshold
+            is_match = similarity and similarity >= similarity_threshold
             matched = targets[match.idx]
             data.append([query, matched, similarity, is_match])
 
