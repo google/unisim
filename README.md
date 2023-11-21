@@ -144,8 +144,8 @@ Most similar matches:
 If you use the UniSim package in your work, please cite:
 
 ```bibtex
-@software{unisim2023,
-    title = {UniSim: Universal Similarity},
+@software{UniSim_Universal_Similarity_2023,
+    title = {{UniSim: Universal Similarity}},
     author = {Marina Zhang, Owen Vallis, and Elie Bursztein},
     url = {https://github.com/google/unisim},
     version = {0.0.1},
@@ -156,8 +156,8 @@ If you use the UniSim package in your work, please cite:
 Additionally, if you use TextSim or the RETSim model, please cite the following paper: 
 
 ```bibtex
-@article{retsim2023,
-    title = {RETSim: Resilient and Efficient Text Similarity},
+@article{RETSim_2023,
+    title = {{RETSim: Resilient and Efficient Text Similarity}},
     author = {Marina Zhang, Owen Vallis, Aysegul Bumin, Tanay Vakharia, and Elie Bursztein},
     year = {2023},
     eprint = {FIXME}
