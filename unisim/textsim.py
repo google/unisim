@@ -113,7 +113,9 @@ class TextSim(UniSim):
         """
         return super().similarity(input1=input1, input2=input2)
 
-    def match(self, queries: Sequence[Any], targets: Sequence[Any] | None = None) -> DataFrame:
+    def match(
+        self, queries: Sequence[str], targets: Sequence[Any] | None = None, similarity_threshold: float = 0.9
+    ) -> DataFrame:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -124,12 +126,18 @@ class TextSim(UniSim):
                 match in `targets`. If None, then `queries` is used as the
                 targets as well and matches are computed within a single list.
 
+            similarity_threshold: Similarity threshold for near-duplicate
+                match, where a query and a search result are considered
+                near-duplicate matches if their similarity is higher than
+                `similarity_threshold`. 0.9 is typically a good threshold
+                for detecting near-duplicate matches.
+
         Returns:
             Returns a pandas DataFrame with ["Query", "Match", "Similarity"]
             columns, representing each query, nearest match in `targets`, and
             their similarity value.
         """
-        return super().match(queries=queries, targets=targets)
+        return super().match(queries=queries, targets=targets, similarity_threshold=similarity_threshold)
 
     def embed(self, inputs: Sequence[str]) -> BatchEmbeddings:
         """Compute embeddings for input texts.
@@ -143,17 +151,18 @@ class TextSim(UniSim):
         """
         return super().embed(inputs=inputs)
 
-    def add(self, inputs: Sequence[str]) -> List[int]:
+    def add(self, inputs: Sequence[str], return_idxs: bool = False) -> List[int] | None:
         """Embed and add inputs to the index.
 
         Args:
             inputs: Inputs to embed and add to the index.
+            return_idxs: Whether to return the idxs of the inputs added.
 
         Returns:
              idxs: Indices corresponding to the inputs added to the index,
              where idxs[0] is the idx for inputs[0] in the index.
         """
-        return super().add(inputs=inputs)
+        return super().add(inputs=inputs, return_idxs=return_idxs)
 
     def search(
         self, queries: Sequence[str], similarity_threshold: float = 0.9, k: int = 1, drop_closest_match: bool = False
@@ -188,7 +197,7 @@ class TextSim(UniSim):
             queries=queries, similarity_threshold=similarity_threshold, k=k, drop_closest_match=drop_closest_match
         )
 
-    def visualize(self, result: Result, max_display_chars: int = 32):
+    def visualize(self, result: Result, max_display_chars: int = 64):
         """Visualize a search result, displaying the query, closest
         search results and matches, and their similarity values.
 
@@ -210,4 +219,11 @@ class TextSim(UniSim):
             print(f'Query {result.query_idx}: "{result.query_data}"')
         else:
             print(f"Query {result.query_idx}")
-        print(tabulate(rows, headers=["idx", "is_match", "similarity", "content"]))
+
+        print("Most similar matches:\n")
+
+        headers = ["idx", "is_match", "similarity"]
+        if self.store_data:
+            headers.append("text")
+
+        print(tabulate(rows, headers=headers))

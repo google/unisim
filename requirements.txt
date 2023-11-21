@@ -1,2 +1,0 @@
-usearch>=2.6.0  # bug #275 that breaks exact search affect usearch before 2.6.0
-tqdm

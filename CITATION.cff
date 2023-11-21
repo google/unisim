@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - given-names: "Marina"
+    family-names: "Zhang"
+  - given-names: "Owen"
+    family-names: "Vallis"
+  - given-names: "Elie"
+    family-names: "Bursztein"
+title: "UniSim: Universal Similarity"
+version: 0.0.1
+date-released: 2023-12-01
+url: "https://github.com/google/unisim"

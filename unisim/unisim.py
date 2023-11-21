@@ -166,11 +166,13 @@ class UniSim(ABC):
 
         return float(similarity)
 
-    def add(self, inputs: Sequence[Any]) -> List[int]:
+    def add(self, inputs: Sequence[Any], return_idxs: bool = False) -> List[int] | None:
         """Add inputs to the index.
 
         Args:
             inputs: Inputs to embed and add to the index.
+
+            return_idxs: Whether to return the idxs of the inputs added.
 
         Returns:
              idxs: Indices corresponding to the inputs added to the index,
@@ -194,7 +196,9 @@ class UniSim(ABC):
 
             # store the idxs corresponding to inputs
             inputs_idxs.extend(idxs)
-        return inputs_idxs
+
+        if return_idxs:
+            return inputs_idxs
 
     def search(
         self, queries: Sequence[Any], similarity_threshold: float, k: int = 1, drop_closest_match: bool = False
@@ -240,7 +244,9 @@ class UniSim(ABC):
 
         return results
 
-    def match(self, queries: Sequence[Any], targets: Sequence[Any] | None = None) -> DataFrame:
+    def match(
+        self, queries: Sequence[Any], targets: Sequence[Any] | None = None, similarity_threshold: float = 0.9
+    ) -> DataFrame:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -251,11 +257,19 @@ class UniSim(ABC):
                 match in `targets`. If None, then `queries` is used as the
                 targets as well and matches are computed within a single list.
 
+            similarity_threshold: Similarity threshold for near-duplicate
+                match, where a query and a search result are considered
+                near-duplicate matches if their similarity is higher than
+                `similarity_threshold`.
+
         Returns:
-            Returns a pandas DataFrame with ["Query", "Match", "Similarity"]
+            Returns a pandas DataFrame with ["Query", "Target", "Similarity"]
             columns, representing each query, nearest match in `targets`, and
             their similarity value.
         """
+        # reset index
+        self.reset_index()
+
         # defaults if we have targets
         drop_closest_match = False
         k = 1
@@ -279,10 +293,11 @@ class UniSim(ABC):
             query = queries[i]
             match = results[i].matches[0]
             similarity = match.similarity
+            is_match = similarity >= similarity_threshold
             matched = targets[match.idx]
-            data.append([query, matched, similarity])
+            data.append([query, matched, similarity, is_match])
 
-        df = DataFrame(data, columns=["Query", "Match", "Similarity"])
+        df = DataFrame(data, columns=["query", "target", "similarity", "is_match"])
         return df
 
     def reset_index(self):
