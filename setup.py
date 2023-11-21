@@ -42,6 +42,7 @@ setup(
     version=get_version("unisim/__init__.py"),
     description="UniSim: Universal Similarity",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Google",
     author_email="unisim@google.com",
     url="https://github.com/google/unisim",

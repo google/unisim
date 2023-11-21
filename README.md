@@ -68,7 +68,7 @@ TextSim is able to find fuzzy matches of strings ("appl" to "apple" and "icecrea
 
 TextSim offers more complex functionality which allows you to maintain an index of texts (e.g. from a large dataset) and query the index to find similar texts. TextSim supports efficient approximate nearest neighbor (ANN) search using  [USearch](https://github.com/unum-cloud/usearch) which allows it to scale to large datasets with millions of examples.
 
-Please see a minimal working example below for how to use the `.add` and `.search` methods to create and search an index of texts, as well as the demo [colab](notebooks/unisim_text_demo.ipynb) for an in-depth example on using TextSim for fuzzy matching on a real-world dataset for address matching.
+Please see a minimal working example below for how to use the `.add` and `.search` methods to create and search an index of texts, as well as the demo [colab](notebooks/unisim_text_demo.ipynb) for an in-depth example using TextSim for fuzzy matching on a real-world address matching dataset.
 
 <details>
 
@@ -160,7 +160,7 @@ Additionally, if you use TextSim or the RETSim model, please cite the following 
     title = {{RETSim: Resilient and Efficient Text Similarity}},
     author = {Marina Zhang, Owen Vallis, Aysegul Bumin, Tanay Vakharia, and Elie Bursztein},
     year = {2023},
-    eprint = {FIXME}
+    eprint = {TODO}
 }
 ```
 
