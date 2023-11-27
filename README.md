@@ -37,7 +37,7 @@ text_sim.similarity("this is a text", "This is a txt! 😀")  # 0.9113
 text_sim.similarity("this is a text", "apples")  # 0.4220
 ```
 
-TextSim offers efficient fuzzy string matching between two lists using the `.match` function. The `.match` function accepts `queries` (list of strings you want to find matches for) and `targets` (list of strings you are finding matches in).
+TextSim offers efficient fuzzy string matching between two lists using the `.match` function, similar to the [PolyFuzz](https://maartengr.github.io/PolyFuzz/) package. The `.match` function accepts `queries` (list of strings you want to find matches for) and `targets` (list of strings you are finding matches in).
 
 `.match(queries, targets)` returns a Pandas DataFrame, where each row contains a query, its most similar match found in targets, their similarity, and whether or not they are a match (if their similarity is >= `similarity_threshold`). By default, `0.9` is typically a good `similarity_threshold` for near-duplicate matching strings.
 
