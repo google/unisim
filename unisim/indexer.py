@@ -108,7 +108,8 @@ class Indexer:
         query_embeddings: BatchEmbeddings,
         similarity_threshold: float,
         k: int,
-        return_data: bool,
+        drop_closest_match: bool = False,
+        return_data: bool = True,
         return_embeddings: bool = True,
         data: Sequence[Any] = [],
     ) -> ResultCollection:
@@ -127,6 +128,11 @@ class Indexer:
 
             k: Number of nearest neighbors to lookup.
 
+            drop_closest_match: If True, remove the closest match before returning
+                results. This is used when search queries == indexed set, since
+                each query's closest match will be itself if it was already added
+                to the index.
+
             return_data: Whether to return data corresponding to search results.
 
             return_embeddings: Whether to return embeddings for search results.
@@ -138,6 +144,10 @@ class Indexer:
         """
         if return_data and not data:
             raise ValueError("Can't return data, data is empty")
+
+        # we need to increase k by 1 if we are dropping the closest match
+        if drop_closest_match:
+            k += 1
 
         # Using USearch exact search
         if self.use_exact:
@@ -176,6 +186,13 @@ class Indexer:
                 result.query_embedding = query_embeddings[query_idx]
 
             for rank, m in enumerate(matches):
+                # drop closest match if set and increase the ranking of matches
+                if drop_closest_match:
+                    if rank == 0:
+                        continue
+                    else:
+                        rank -= 1
+
                 target_idx = m.key
                 similarity = 1 - m.distance
                 embedding = None

@@ -90,14 +90,14 @@ class UniSim(ABC):
         self.verbose = verbose
 
         if self.store_data:
-            print("UniSim is storing a copy of the indexed data")
-            print("If you are using large data corpus, consider disabling this behavior using store_data=False")
+            print("INFO: UniSim is storing a copy of the indexed data")
+            print("INFO: If you are using large data corpus, consider disabling this behavior using store_data=False")
         else:
-            print("UniSim is not storing a copy of the indexed data to save memory")
-            print("If you want to store a copy of the data, use store_data=True")
+            print("INFO: UniSim is not storing a copy of the indexed data to save memory")
+            print("INFO: If you want to store a copy of the data, use store_data=True")
 
         if use_accelerator and get_accelerator() == AcceleratorType.cpu:
-            print("Accelerator is not available, using cpu instead")
+            print("INFO: Accelerator is not available, using CPU")
             self.use_accelerator = False
 
         # internal state
@@ -194,15 +194,18 @@ class UniSim(ABC):
 
             # store the idxs corresponding to inputs
             inputs_idxs.extend(idxs)
+
         return inputs_idxs
 
-    def search(self, inputs: Sequence[Any], similarity_threshold: float, k: int = 1) -> ResultCollection:
+    def search(
+        self, queries: Sequence[Any], similarity_threshold: float, k: int = 1, drop_closest_match: bool = False
+    ) -> ResultCollection:
         """Search for and return the k closest matches for a set of queries,
         and mark the ones that are closer than `similarity_threshold` as
         near-duplicate matches.
 
         Args:
-            inputs: Query inputs to search for.
+            queries: Query inputs to search for.
 
             similarity_threshold: Similarity threshold for near-duplicate
                 match, where a query and a search result are considered
@@ -211,12 +214,17 @@ class UniSim(ABC):
 
             k: Number of nearest neighbors to lookup for each query input.
 
+            drop_closest_match: If True, remove the closest match before returning
+                results. This is used when search queries == indexed set, since
+                each query's closest match will be itself if it was already added
+                to the index.
+
         Returns
             result_collection: ResultCollection containing the search results.
         """
         results = ResultCollection()
-        for b_offset in range(0, len(inputs), self.batch_size):
-            batch = inputs[b_offset : b_offset + self.batch_size]
+        for b_offset in range(0, len(queries), self.batch_size):
+            batch = queries[b_offset : b_offset + self.batch_size]
             embs = self.embed(batch)
 
             r = self.indexer.search(
@@ -224,6 +232,7 @@ class UniSim(ABC):
                 query_embeddings=embs,
                 similarity_threshold=similarity_threshold,
                 k=k,
+                drop_closest_match=drop_closest_match,
                 return_data=self.store_data,
                 return_embeddings=self.return_embeddings,
                 data=self.indexed_data,
@@ -232,7 +241,9 @@ class UniSim(ABC):
 
         return results
 
-    def match(self, queries: Sequence[Any], targets: Sequence[Any]) -> DataFrame:
+    def match(
+        self, queries: Sequence[Any], targets: Sequence[Any] | None = None, similarity_threshold: float = 0.9
+    ) -> DataFrame:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -240,18 +251,39 @@ class UniSim(ABC):
             queries: Input queries to search for.
 
             targets: Targets to search in, e.g. for each query, find the nearest
-                match in `targets`.
+                match in `targets`. If None, then `queries` is used as the
+                targets as well and matches are computed within a single list.
+
+            similarity_threshold: Similarity threshold for near-duplicate
+                match, where a query and a search result are considered
+                near-duplicate matches if their similarity is higher than
+                `similarity_threshold`.
 
         Returns:
-            Returns a pandas DataFrame with ["Query", "Match", "Similarity"]
-            columns, representing each query, nearest match in `targets`, and
-            their similarity value.
+            Returns a pandas DataFrame with ["query", "target", "similarity", "is_match"]
+            columns, representing each query, nearest match in `targets`, their similarity
+            value, and whether or not they are a match (if their similarity >=
+            `similarity_threshold`).
         """
+        # reset index
+        self.reset_index()
+
+        # defaults if we have targets
+        drop_closest_match = False
+        k = 1
+
+        # if we are matching within the same list, drop the closest match
+        # since it will be the query itself
+        if not targets:
+            targets = queries
+            drop_closest_match = True
+            k = 2
+
         # add all targets
         self.add(targets)
 
         # search all queries, so it doesn't depend on similarity threshold
-        results = self.search(queries, similarity_threshold=0.0, k=1).results
+        results = self.search(queries, similarity_threshold=0.0, k=k, drop_closest_match=drop_closest_match).results
 
         # create pandas df
         data = []
@@ -259,10 +291,11 @@ class UniSim(ABC):
             query = queries[i]
             match = results[i].matches[0]
             similarity = match.similarity
+            is_match = similarity and similarity >= similarity_threshold
             matched = targets[match.idx]
-            data.append([query, matched, similarity])
+            data.append([query, matched, similarity, is_match])
 
-        df = DataFrame(data, columns=["Query", "Match", "Similarity"])
+        df = DataFrame(data, columns=["query", "target", "similarity", "is_match"])
         return df
 
     def reset_index(self):

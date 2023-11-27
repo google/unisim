@@ -127,7 +127,7 @@ def test_textsim_basic_search_workflow(backend_type, index_type):
 
 @pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_match(backend_type, index_type):
+def test_textsim_match_two_lists(backend_type, index_type):
     set_test_backend(b=backend_type)
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
     queries = ["test", "This is a test", "cookies", "a" * 1024]
@@ -137,9 +137,30 @@ def test_textsim_match(backend_type, index_type):
 
     expected_df = pd.DataFrame(
         {
-            "Query": queries,
-            "Match": [targets[3], targets[0], targets[1], targets[2]],
-            "Similarity": [1.0000, 0.937122, 0.895018, 1.000000],
+            "query": queries,
+            "target": [targets[3], targets[0], targets[1], targets[2]],
+            "similarity": [1.0000, 0.9371, 0.8950, 1.000],
+            "is_match": [True, True, False, True]
         }
     )
-    pd.testing.assert_frame_equal(df, expected_df)
+    pd.testing.assert_frame_equal(df, expected_df, check_exact=False, atol=1e-4)
+
+
+@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
+@pytest.mark.parametrize("index_type", index_type, ids=index_type)
+def test_textsim_match_single_list(backend_type, index_type):
+    set_test_backend(b=backend_type)
+    tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
+    queries = ["test", "This is a test", "this is a test! 😀", "a" * 1024]
+
+    df = tsim.match(queries)
+
+    expected_df = pd.DataFrame(
+        {
+            "query": queries,
+            "target": [queries[1], queries[2], queries[1], queries[0]],
+            "similarity": [0.7674, 0.9371, 0.9371, 0.3772],
+            "is_match": [False, True, True, False]
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected_df, check_exact=False, atol=1e-4)

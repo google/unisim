@@ -15,6 +15,7 @@
  """
 from typing import Any, Dict, List, Sequence
 
+from pandas import DataFrame
 from tabulate import tabulate
 
 from .dataclass import Result, ResultCollection
@@ -112,22 +113,31 @@ class TextSim(UniSim):
         """
         return super().similarity(input1=input1, input2=input2)
 
-    def match(self, queries: Sequence[Any], targets: Sequence[Any]):
+    def match(
+        self, queries: Sequence[str], targets: Sequence[Any] | None = None, similarity_threshold: float = 0.9
+    ) -> DataFrame:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
         Args:
             queries: Input query texts to search for.
 
-            targets: Target texts to search for queries in. For each query,
-                we search and return the most similar text in `targets`.
+            targets: Targets to search in, e.g. for each query, find the nearest
+                match in `targets`. If None, then `queries` is used as the
+                targets as well and matches are computed within a single list.
+
+            similarity_threshold: Similarity threshold for near-duplicate
+                match, where a query and a search result are considered
+                near-duplicate matches if their similarity is higher than
+                `similarity_threshold`. 0.9 is typically a good threshold
+                for detecting near-duplicate matches.
 
         Returns:
             Returns a pandas DataFrame with ["Query", "Match", "Similarity"]
             columns, representing each query, nearest match in `targets`, and
             their similarity value.
         """
-        return super().match(queries=queries, targets=targets)
+        return super().match(queries=queries, targets=targets, similarity_threshold=similarity_threshold)
 
     def embed(self, inputs: Sequence[str]) -> BatchEmbeddings:
         """Compute embeddings for input texts.
@@ -153,13 +163,15 @@ class TextSim(UniSim):
         """
         return super().add(inputs=inputs)
 
-    def search(self, inputs: Sequence[str], similarity_threshold: float = 0.9, k: int = 1) -> ResultCollection:
+    def search(
+        self, queries: Sequence[str], similarity_threshold: float = 0.9, k: int = 1, drop_closest_match: bool = False
+    ) -> ResultCollection:
         """Search for and return the k closest matches for a set of queries,
         and mark the ones that are closer than `similarity_threshold` as
         near-duplicate matches.
 
         Args:
-            inputs: Query input texts to search for.
+            queries: Query input texts to search for.
 
             similarity_threshold: Similarity threshold for near-duplicate
                 match, where a query and a search result are considered
@@ -169,15 +181,22 @@ class TextSim(UniSim):
 
             k: Number of nearest neighbors to lookup for each query input.
 
+            drop_closest_match: If True, remove the closest match before returning
+                results. This is used when search queries == indexed set, since
+                each query's closest match will be itself if it was already added
+                to the index.
+
         Returns
             result_collection: ResultCollection containing the search results.
             The total number of near-duplicate matches can be accessed through
             result_collection.total_matches and the list of results for each
             query can be accessed through result_collection.results.
         """
-        return super().search(inputs=inputs, similarity_threshold=similarity_threshold, k=k)
+        return super().search(
+            queries=queries, similarity_threshold=similarity_threshold, k=k, drop_closest_match=drop_closest_match
+        )
 
-    def visualize(self, result: Result, max_display_chars: int = 32):
+    def visualize(self, result: Result, max_display_chars: int = 64):
         """Visualize a search result, displaying the query, closest
         search results and matches, and their similarity values.
 
@@ -199,4 +218,11 @@ class TextSim(UniSim):
             print(f'Query {result.query_idx}: "{result.query_data}"')
         else:
             print(f"Query {result.query_idx}")
-        print(tabulate(rows, headers=["idx", "is_match", "similarity", "content"]))
+
+        print("Most similar matches:\n")
+
+        headers = ["idx", "is_match", "similarity"]
+        if self.store_data:
+            headers.append("text")
+
+        print(tabulate(rows, headers=headers))

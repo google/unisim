@@ -92,5 +92,5 @@ elif get_backend() == BackendType.tf:
 else:
     raise ValueError(f"Unknown backend {get_backend()}")
 
-print("Loaded backend")
-print(f"Using {get_backend().name} with {get_accelerator().name}")
+print("INFO: Loaded backend")
+print(f"INFO: Using {get_backend().name.upper()} with {get_accelerator().name.upper()}")
