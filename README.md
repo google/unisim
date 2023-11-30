@@ -146,7 +146,7 @@ If you use the UniSim package in your work, please cite:
 ```bibtex
 @software{UniSim_Universal_Similarity_2023,
     title = {{UniSim: Universal Similarity}},
-    author = {Marina Zhang, Owen Vallis, and Elie Bursztein},
+    author = {Marina Zhang, Owen Vallis, Ali Zand, and Elie Bursztein},
     url = {https://github.com/google/unisim},
     version = {0.0.1},
     year = {2023}
