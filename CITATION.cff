@@ -5,6 +5,8 @@ authors:
     family-names: "Zhang"
   - given-names: "Owen"
     family-names: "Vallis"
+  - given-names: "Ali"
+    family-names: "Zand"
   - given-names: "Elie"
     family-names: "Bursztein"
 title: "UniSim: Universal Similarity"
