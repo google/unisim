@@ -21,7 +21,7 @@ The goal of TextSim is to provide an easy-to-use tool for efficient, accurate an
 
 TextSim is significantly faster than edit-distance algorithms such as Levenshtein Distance for fuzzy string matching and more accurate than ngram-based methods such as MinHash for near-duplicate text detection and clustering. TextSim accepts strings of arbitrary length and can scale to datasets with millions of examples.
 
-To accomplish this, TextSim leverages the RETSim[TODO add link] model to efficiently embed texts into high-dimensional vectors that can be compared using cosine similarity. TextSim then uses [USearch](https://github.com/unum-cloud/usearch) for fast vector search.
+To accomplish this, TextSim leverages the [RETSim model](https://arxiv.org/abs/2311.17264) to efficiently embed texts into high-dimensional vectors that can be compared using cosine similarity. TextSim then uses [USearch](https://github.com/unum-cloud/usearch) for fast vector search.
 
 ### Basic Usage
 
@@ -160,7 +160,7 @@ Additionally, if you use TextSim or the RETSim model, please cite the following 
     title = {{RETSim: Resilient and Efficient Text Similarity}},
     author = {Marina Zhang, Owen Vallis, Aysegul Bumin, Tanay Vakharia, and Elie Bursztein},
     year = {2023},
-    eprint = {TODO}
+    eprint = {arXiv:2302.09207}
 }
 ```
 
