@@ -93,7 +93,7 @@ dataset = [
 ]
 
 # index your dataset using .add
-text_sim.add(index_examples)
+text_sim.add(dataset)
 
 # queries can also be a very large dataset
 queries = [
