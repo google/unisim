@@ -160,7 +160,7 @@ Additionally, if you use TextSim or the RETSim model, please cite the following 
     title = {{RETSim: Resilient and Efficient Text Similarity}},
     author = {Marina Zhang, Owen Vallis, Aysegul Bumin, Tanay Vakharia, and Elie Bursztein},
     year = {2023},
-    eprint = {arXiv:2302.09207}
+    eprint = {arXiv:2311.17264}
 }
 ```
 
