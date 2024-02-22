@@ -36,7 +36,7 @@ jobs:
     
     - name: Static analysis
       run: |
-        mypy --install-types
+        python3 -m pip install types-tabulate
         mypy  unisim/ --raise-exceptions
     
     - name: Test with pytest
