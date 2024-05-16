@@ -50,8 +50,9 @@ if "BACKEND" not in os.environ:
 
 # post detection
 if get_backend() == BackendType.onnx:
-    from .onnx import *  # noqa: F403, F401
     import onnxruntime as rt
+
+    from .onnx import *  # noqa: F403, F401
 
     # FIXME onnx accelerator type support
     if rt.get_device() == "GPU":
