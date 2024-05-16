@@ -39,7 +39,7 @@ setup(
     license="MIT",
     install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime-gpu", "pandas", "usearch>=2.6.0"],
     extras_require={
-        "tensorflow": ["tensorflow>=2.11"],
+        "tensorflow": ["tensorflow>=2.11,<2.16"],
         "dev": [
             "datasets",
             "mypy",
