@@ -25,7 +25,7 @@ jobs:
 
     - name: Install package
       run: |
-        pip install ".[tensorflow,dev]"
+        pip install ".[dev]"
 
     - name: Build package
       run: |
