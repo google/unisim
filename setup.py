@@ -37,7 +37,17 @@ setup(
     author_email="unisim@google.com",
     url="https://github.com/google/unisim",
     license="MIT",
-    install_requires=["tabulate", "numpy", "tqdm", "onnx", "jaxtyping", "onnxruntime-gpu", "pandas", "tensorflow>=2.11,<2.16", "usearch>=2.6.0"],
+    install_requires=[
+        "tabulate",
+        "numpy",
+        "tqdm",
+        "onnx",
+        "jaxtyping",
+        "onnxruntime-gpu",
+        "pandas",
+        "tensorflow>=2.11,<2.16",
+        "usearch>=2.6.0",
+    ],
     extras_require={
         "dev": [
             "datasets",
