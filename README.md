@@ -9,11 +9,13 @@ You can use `pip` to install the latest version of UniSim:
 pip install unisim
 ```
 
-By default, UniSim uses [Onnx](https://github.com/onnx/onnx) when running on CPU, and [TensorFlow](https://www.tensorflow.org/) for GPU acceleration. If you have a GPU, you can additionally install TensorFlow using:
+By default, UniSim uses [Onnx](https://github.com/onnx/onnx) as the runtime. You can additionally install TensorFlow using:
 
 ```
 pip install unisim[tensorflow]
 ```
+
+You can switch to using TensorFlow by setting the `BACKEND` environment variable (e.g. `os.environ["BACKEND"] = "tf"`).
 
 ## Text UniSim (TextSim)
 
