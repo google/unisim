@@ -39,9 +39,6 @@ if TF_AVAILABLE or get_backend() == BackendType.tf:
     else:
         set_accelerator(AcceleratorType.cpu)
 
-else:
-    set_accelerator(AcceleratorType.cpu)
-
 # choose backend if not set by user
 accel = get_accelerator()
 backend = get_backend()
@@ -53,7 +50,7 @@ if "BACKEND" not in os.environ:
     elif accel == AcceleratorType.cpu:
         # on CPU always onnx
         set_backend(BackendType.onnx)
-    elif TF_AVAILABLE:
+    elif TF_AVAILABLE and accel == AcceleratorType.gpu:
         # on GPU use TF by default
         set_backend(BackendType.tf)
     else:
@@ -66,7 +63,6 @@ if get_backend() == BackendType.onnx:
 
     from .onnx import *  # noqa: F403, F401
 
-    # FIXME onnx accelerator type support
     if rt.get_device() == "GPU":
         set_accelerator(AcceleratorType.gpu)
     else:
