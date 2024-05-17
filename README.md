@@ -9,7 +9,7 @@ You can use `pip` to install the latest version of UniSim:
 pip install unisim
 ```
 
-By default, UniSim uses [Onnx](https://github.com/onnx/onnx) when running on CPU, and [TensorFlow](https://www.tensorflow.org/) when a GPU is available.
+UniSim uses [Onnx](https://github.com/onnx/onnx) as the inference engine.
 
 ## Text UniSim (TextSim)
 
@@ -75,7 +75,6 @@ text_sim = TextSim(
     store_data=True, # set to False for large datasets to save memory
     index_type="exact", # set to "approx" for large datasets to use ANN search
     batch_size=128, # increasing batch_size on GPU may be faster
-    use_accelerator=True, # uses GPU if available, otherwise uses CPU
 )
 
 # the dataset can be very large, e.g. millions of texts

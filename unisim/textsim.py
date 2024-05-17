@@ -35,7 +35,6 @@ class TextSim(UniSim):
         index_type: str | IndexerType = "exact",
         return_embeddings: bool = True,
         batch_size: int = 128,
-        use_accelerator: bool = True,
         model_id: str = "text/retsim/v1",
         index_params: Dict[str, Any] | None = None,
         verbose: int = 0,
@@ -61,8 +60,6 @@ class TextSim(UniSim):
 
             batch_size: Batch size for model inference.
 
-            use_accelerator: Whether to use an accelerator (GPU), if available.
-
             model_id: String id of the model. Defaults to "text/retsim/v1" for
                 the RETSim model.
 
@@ -84,7 +81,6 @@ class TextSim(UniSim):
             index_type=index_type,
             return_embeddings=return_embeddings,
             batch_size=batch_size,
-            use_accelerator=use_accelerator,
             model_id=model_id,
             embedder=embedder,
             index_params=index_params,

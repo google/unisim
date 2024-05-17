@@ -10,7 +10,7 @@ from typing import Any, Dict, Sequence, Union
 import numpy as np
 from onnxruntime import InferenceSession
 
-from ..types import BatchEmbeddings
+from .types import BatchEmbeddings
 
 
 def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: BatchEmbeddings) -> np.ndarray:
@@ -28,8 +28,8 @@ def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: Batch
     return similarity
 
 
-# ONNX providers
-_providers = ["CPUExecutionProvider"]
+# ONNX providers -- prefer CUDA Execution Provider over CPU Execution Provider 
+_providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
 
 
 def load_model(path: Path, verbose: int = 0) -> Dict[str, Any]:

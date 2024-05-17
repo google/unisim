@@ -10,10 +10,7 @@ from typing import Union
 
 from jaxtyping import Float32
 from numpy import ndarray
-from tensorflow import Tensor
-
-Array = Union[Tensor, ndarray]
 
 # Embeddings
-Embedding = Float32[Array, "embedding"]
-BatchEmbeddings = Float32[Array, "batch embeddings"]
+Embedding = Float32[ndarray, "embedding"]
+BatchEmbeddings = Float32[ndarray, "batch embeddings"]

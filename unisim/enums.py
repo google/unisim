@@ -7,28 +7,6 @@
 from enum import Enum
 
 
-class BackendType(Enum):
-    """Backend type.
-
-    One of {unknown, onnx, tf}.
-    """
-
-    unknown = 0
-    onnx = 1
-    tf = 2
-
-
-class AcceleratorType(Enum):
-    """Accelerator type
-
-    One of {unknown, cpu, gpu}.
-    """
-
-    unknown = 0
-    cpu = 1
-    gpu = 2
-
-
 class IndexerType(Enum):
     """Indexer type
 

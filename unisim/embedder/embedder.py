@@ -10,7 +10,7 @@ from typing import Any, List, Sequence, Union
 
 import numpy as np
 
-from .. import backend as B
+from ..backend import load_model, predict
 from ..types import BatchEmbeddings
 
 
@@ -39,7 +39,7 @@ class Embedder(ABC):
             print("[Loading model]")
             print(f"|-model_id: {model_id}")
 
-        self.model = B.load_model(model_path, verbose=verbose)
+        self.model = load_model(model_path, verbose=verbose)
 
     @property
     @abstractmethod
@@ -64,7 +64,7 @@ class Embedder(ABC):
         embeddings: List[np.ndarray] = []
         for idx in range(0, len(data), self.batch_size):
             batch = data[idx : idx + self.batch_size]
-            batch_embs = B.predict(self.model, batch=batch)
+            batch_embs = predict(self.model, batch=batch)
             embeddings.extend(batch_embs)
         embeddings_array: BatchEmbeddings = np.asanyarray(embeddings)
         return embeddings_array

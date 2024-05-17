@@ -10,11 +10,10 @@ from typing import Any, Dict, List, Sequence
 import numpy as np
 from pandas import DataFrame
 
-from . import backend as B
-from .config import get_accelerator
+from .backend import cosine_similarity
 from .dataclass import ResultCollection
 from .embedder import Embedder
-from .enums import AcceleratorType, IndexerType
+from .enums import IndexerType
 from .indexer import Indexer
 from .types import BatchEmbeddings
 
@@ -34,7 +33,6 @@ class UniSim(ABC):
         index_type: str | IndexerType,
         return_embeddings: bool,
         batch_size: int,
-        use_accelerator: bool,
         model_id: str,
         embedder: Embedder,
         index_params: Dict[str, Any] | None = None,
@@ -55,8 +53,6 @@ class UniSim(ABC):
 
             batch_size: Batch size for inference.
 
-            use_accelerator: Whether to use an accelerator (GPU), if available.
-
             model_id: String id of the model.
 
             embedder: Embedder object which converts inputs into embeddings using
@@ -74,7 +70,6 @@ class UniSim(ABC):
         self.index_type = index_type if isinstance(index_type, IndexerType) else IndexerType[index_type]
         self.return_embeddings = return_embeddings
         self.batch_size = batch_size
-        self.use_accelerator = use_accelerator
         self.model_id = model_id
         self.embedder = embedder
         self.index_params = index_params if index_params else {}
@@ -86,10 +81,6 @@ class UniSim(ABC):
         else:
             print("INFO: UniSim is not storing a copy of the indexed data to save memory")
             print("INFO: If you want to store a copy of the data, use store_data=True")
-
-        if use_accelerator and get_accelerator() == AcceleratorType.cpu:
-            print("INFO: Accelerator is not available, using CPU")
-            self.use_accelerator = False
 
         # internal state
         self.index_size = 0
@@ -149,7 +140,7 @@ class UniSim(ABC):
         embs = self.embed(batch)
 
         # compute similarity
-        similarity = B.cosine_similarity(embs, embs)
+        similarity = cosine_similarity(embs, embs)
         similarity = np.asanyarray(similarity[0][1])
 
         # clip sometimes for floating point error
@@ -307,6 +298,5 @@ class UniSim(ABC):
 
         print("[Indexer]")
         print(f"|-index_type: {self.index_type.name}")
-        print(f"|-use_accelerator: {self.use_accelerator}")
         print(f"|-store index data: {self.store_data}")
         print(f"|-return embeddings: {self.return_embeddings}")

@@ -43,9 +43,8 @@ setup(
         "tqdm",
         "onnx",
         "jaxtyping",
-        "onnxruntime-gpu",
+        "onnxruntime",
         "pandas",
-        "tensorflow>=2.11,<2.16",
         "usearch>=2.6.0",
     ],
     extras_require={
@@ -59,7 +58,6 @@ setup(
             "tabulate",
             "black",
             "isort",
-            "tf2onnx",
         ],
     },
     classifiers=[

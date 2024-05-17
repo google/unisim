@@ -4,37 +4,17 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
-from importlib import reload
-
 import pandas as pd
 import pytest
 
-import unisim
 from unisim import TextSim
-from unisim.config import BackendType, set_backend
 
-backend_type = ["tf", "onnx"]
 index_type = ["exact", "approx"]
 BATCH_SIZE = 4
 
 
-def set_test_backend(b):
-    # Reload unisim to pick up the new backend
-    os.environ["BACKEND"] = b
-
-    if b == "tf":
-        set_backend(BackendType.tf)
-    elif b == "onnx":
-        set_backend(BackendType.onnx)
-
-    reload(unisim)
-
-
-@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_similarity(backend_type, index_type):
-    set_test_backend(b=backend_type)
+def test_textsim_similarity(index_type):
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE, verbose=True)
 
     sim = tsim.similarity("I love icecreams", "I love icecreams")
@@ -51,10 +31,8 @@ def test_textsim_similarity(backend_type, index_type):
     assert round(sim, 3) == 0.967
 
 
-@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_embed(backend_type, index_type):
-    set_test_backend(b=backend_type)
+def test_textsim_embed(index_type):
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
 
     embs = tsim.embed(["This is a test"])
@@ -64,10 +42,8 @@ def test_textsim_embed(backend_type, index_type):
     assert embs.shape == (2, 256)
 
 
-@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_add(backend_type, index_type):
-    set_test_backend(b=backend_type)
+def test_textsim_add(index_type):
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
 
     s1 = "This is a test"
@@ -77,10 +53,8 @@ def test_textsim_add(backend_type, index_type):
     tsim.add([s1, s2, s2])
 
 
-@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_basic_search_workflow(backend_type, index_type):
-    set_test_backend(b=backend_type)
+def test_textsim_basic_search_workflow(index_type):
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
     tsim.info()
     tsim.reset_index()
@@ -116,10 +90,8 @@ def test_textsim_basic_search_workflow(backend_type, index_type):
     assert res_1.matches[0].embedding.shape == (256,)
 
 
-@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_match_two_lists(backend_type, index_type):
-    set_test_backend(b=backend_type)
+def test_textsim_match_two_lists(index_type):
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
     queries = ["test", "This is a test", "cookies", "a" * 1024]
     targets = ["this is a test! 😀", "COOKIES", "a" * 1024 + "b" * 256, "test"]
@@ -137,10 +109,8 @@ def test_textsim_match_two_lists(backend_type, index_type):
     pd.testing.assert_frame_equal(df, expected_df, check_exact=False, atol=1e-4)
 
 
-@pytest.mark.parametrize("backend_type", backend_type, ids=backend_type)
 @pytest.mark.parametrize("index_type", index_type, ids=index_type)
-def test_textsim_match_single_list(backend_type, index_type):
-    set_test_backend(b=backend_type)
+def test_textsim_match_single_list(index_type):
     tsim = TextSim(index_type=index_type, model_id="text/retsim/v1", batch_size=BATCH_SIZE)
     queries = ["test", "This is a test", "this is a test! 😀", "a" * 1024]
 
