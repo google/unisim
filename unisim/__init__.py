@@ -4,5 +4,5 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 from .textsim import TextSim  # noqa: F401
