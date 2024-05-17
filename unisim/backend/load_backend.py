@@ -30,6 +30,18 @@ elif not get_backend() or get_backend() == BackendType.unknown:
     except ImportError:
         TF_AVAILABLE = False
 
+# detect accelerator
+if TF_AVAILABLE or get_backend() == BackendType.tf:
+    devices_types = [d.device_type for d in tf.config.list_physical_devices()]
+
+    if "GPU" in devices_types:
+        set_accelerator(AcceleratorType.gpu)
+    else:
+        set_accelerator(AcceleratorType.cpu)
+
+else:
+    set_accelerator(AcceleratorType.cpu)
+
 # choose backend if not set by user
 accel = get_accelerator()
 backend = get_backend()
