@@ -62,8 +62,6 @@ if "BACKEND" not in os.environ:
 
 # post detection
 if get_backend() == BackendType.onnx:
-    import onnxruntime as rt
-
     from .onnx import *  # noqa: F403, F401
 
     # FIXME onnx accelerator type support
