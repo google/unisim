@@ -4,15 +4,15 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from __future__ import annotations
-
-from typing import Union
-
+from typing import Union, TYPE_CHECKING
 from jaxtyping import Float32
-from numpy import ndarray
-from tensorflow import Tensor
 
-Array = Union[Tensor, ndarray]
+if TYPE_CHECKING:
+    from numpy import ndarray
+    from tensorflow import Tensor
+    Array = Union[Tensor, ndarray]
+else:
+    from numpy import ndarray as Array
 
 # Embeddings
 Embedding = Float32[Array, "embedding"]

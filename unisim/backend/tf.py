@@ -12,7 +12,6 @@ import tensorflow as tf
 from tensorflow import Tensor
 from tensorflow.keras import Model
 
-# typing
 from ..types import BatchEmbeddings
 
 
