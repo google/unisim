@@ -48,7 +48,7 @@ setup(
         "usearch>=2.6.0",
     ],
     extras_require={
-        "tensorflow": ["tensorflow>=2.12"],
+        "tensorflow": ["tensorflow>=2.11,<2.16"],
         "dev": [
             "datasets",
             "mypy",

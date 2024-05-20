@@ -11,7 +11,6 @@ from typing import Any, List, Sequence, Union
 import numpy as np
 
 from .. import backend as B
-
 from ..types import BatchEmbeddings
 
 

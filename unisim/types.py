@@ -4,12 +4,14 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
+
 from jaxtyping import Float32
 
 if TYPE_CHECKING:
     from numpy import ndarray
     from tensorflow import Tensor
+
     Array = Union[Tensor, ndarray]
 else:
     from numpy import ndarray as Array
