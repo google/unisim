@@ -45,7 +45,7 @@ jobs:
     - name: Upload coverage to Coveralls
       if: ${{ github.ref == 'refs/heads/main' }}
       run: |
-        coveralls -i --service=github
+        coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
@@ -74,6 +74,6 @@ jobs:
     - name: Finished
       if: ${{ github.ref == 'refs/heads/main' }}
       run: |
-        coveralls -i --service=github --finish
+        coveralls --service=github --finish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
