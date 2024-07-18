@@ -4,8 +4,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from abc import ABC
 import logging
+from abc import ABC
 from typing import Any, Dict, List, Sequence
 
 import numpy as np

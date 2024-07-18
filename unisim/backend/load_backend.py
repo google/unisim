@@ -4,8 +4,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
 import logging
+import os
 
 from ..config import get_accelerator, get_backend, set_accelerator, set_backend
 from ..enums import AcceleratorType, BackendType
