@@ -4,6 +4,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import logging
 import os
 
 from ..config import get_accelerator, get_backend, set_accelerator, set_backend
@@ -83,5 +84,5 @@ elif get_backend() == BackendType.tf:
 else:
     raise ValueError(f"Unknown backend {get_backend()}")
 
-print("INFO: Loaded backend")
-print(f"INFO: Using {get_backend().name.upper()} with {get_accelerator().name.upper()}")
+logging.info("Loaded backend")
+logging.info("Using %s with %s", get_backend().name.upper(), get_accelerator().name.upper())
