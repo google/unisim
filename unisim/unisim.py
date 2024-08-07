@@ -233,9 +233,10 @@ class UniSim(ABC):
 
         return results
 
-    def match(
-        self, queries: Sequence[Any], targets: Sequence[Any] | None = None, similarity_threshold: float = 0.9
-    ) -> DataFrame:
+    def match(self, queries: Sequence[Any],
+              targets: Sequence[Any] | None = None,
+              similarity_threshold: float = 0.9,
+              as_pandas_df: bool = True) -> DataFrame | ResultCollection:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -277,18 +278,25 @@ class UniSim(ABC):
         # search all queries, so it doesn't depend on similarity threshold
         results = self.search(queries, similarity_threshold=0.0, k=k, drop_closest_match=drop_closest_match).results
 
-        # create pandas df
-        data = []
-        for i in range(len(results)):
-            query = queries[i]
-            match = results[i].matches[0]
-            similarity = match.similarity
-            is_match = similarity and similarity >= similarity_threshold
-            matched = targets[match.idx]
-            data.append([query, matched, similarity, is_match])
+        # cleanup index
+        self.reset_index()
 
-        df = DataFrame(data, columns=["query", "target", "similarity", "is_match"])
-        return df
+
+        # return results as a raw ResultCollection or pandas DataFrame
+        if not as_pandas_df:
+            return results
+        else:
+            data = []
+            for i in range(len(results)):
+                query = queries[i]
+                match = results[i].matches[0]
+                similarity = match.similarity
+                is_match = similarity and similarity >= similarity_threshold
+                matched = targets[match.idx]
+                data.append([query, matched, similarity, is_match])
+
+            df = DataFrame(data, columns=["query", "target", "similarity", "is_match"])
+            return df
 
     def reset_index(self):
         """Reset the index by removing all previously-indexed data."""

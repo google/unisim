@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Sequence, Union
 
 import numpy as np
-from onnxruntime import InferenceSession
+from onnxruntime import InferenceSession, get_available_providers
 
 from ..types import BatchEmbeddings
 
@@ -29,8 +29,11 @@ def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: Batch
 
 
 # ONNX providers
-_providers = ["CPUExecutionProvider"]
-
+avail_providers = get_available_providers()
+if "CUDAExecutionProvider" in avail_providers:
+    _providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+else:
+    _providers = ["CPUExecutionProvider"]
 
 def load_model(path: Path, verbose: int = 0) -> Dict[str, Any]:
     """Helper function to load Onnx model.
