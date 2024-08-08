@@ -4,7 +4,7 @@ UniSim is a package for efficiently computing similarity, performing fuzzy match
 
 ## News
 
-- Aug 2024: 1.0.1 with Domain phishing detection colab and bug fixes is out
+- Aug 2024: 1.0.1 with Domain phishing detection colab and bug fixes is out.
 - May 2024: Initial version with Text Similarity and RAG tutorial is out.
 
 ## Installation
@@ -25,9 +25,9 @@ from unisim import TextSim
 text_sim = TextSim()
 text_sim.similarity("this is a text", "This is a txt! 😀")  # 0.9113
 ```
-The higher the similarity, the more similar are strings.
+The higher the similarity, the more similar the strings are.
 
-Beyond this simple example UniSim supports GPU accelerated batch matching and ANN indexing for medium to large matching use-cases including: Dataset deduplication, [LLM RAG](/notebooks/unisim-gemma-text_rag_demo.ipynb), [Address lookup](/notebooks/unisim_text_demo.ipynb) and [Phishing Domains lookup](/notebooks/ct-domain-demo.ipynb)
+Beyond this simple example UniSim supports GPU accelerated batch matching and ANN indexing for medium to large matching use-cases including: Dataset deduplication, [LLM RAG](/notebooks/unisim-gemma-text_rag_demo.ipynb), [Address lookup](/notebooks/unisim_text_demo.ipynb) and [Phishing Domains lookup](/notebooks/ct-domain-demo.ipynb).
 
 ### GPU Acceleration
 By default, UniSim uses [Onnx](https://github.com/onnx/onnx) when running on CPU, and [TensorFlow](https://www.tensorflow.org/) or [Onnx GPU](https://github.com/onnx/onnx) for GPU acceleration. You can switch backends by setting the `BACKEND` environment variable (e.g. `os.environ["BACKEND"] = "tf"` or `"onnx"`). If you have a GPU, you can additionally install TensorFlow using or Onnx:

@@ -2,6 +2,8 @@
 
 ### Added
 
+- Domain phishing detection colab
+
 ### Changed
 
 - Reset index after `match()` as it supposed to be stateless
@@ -11,9 +13,7 @@
 
 - Fixed GPU support for onnx which was disabled early on due to
 bug in the runtime that appears to be fixed
-
 - Debug messages now uses logging to make UniSim easier to use cli
-
 
 ## [1.0.0] - 2024-05-21
 
