@@ -1,18 +1,46 @@
 # UniSim: Universal Similarity
 
-UniSim is a package for efficiently computing similarity, performing fuzzy matching, deduplicating datasets, and clustering data (text and images). The UniSim package is in beta and we may push breaking changes. The UniSim package currently supports text (e.g. for fuzzy string matching) and image support will be added soon.
+UniSim is a package for efficiently computing similarity, performing fuzzy matching, deduplicating datasets, and clustering data (text and images). The UniSim package is in beta and currently supports text (e.g. for fuzzy string matching) and image support will be added soon.
+
+## News
+
+- Aug 2024: 1.0.1 with Domain phishing detection colab and bug fixes is out.
+- May 2024: Initial version with Text Similarity and RAG tutorial is out.
 
 ## Installation
+
 You can use `pip` to install the latest version of UniSim:
 
 ```
 pip install unisim
 ```
 
-By default, UniSim uses [Onnx](https://github.com/onnx/onnx) when running on CPU, and [TensorFlow](https://www.tensorflow.org/) for GPU acceleration. You can switch backends by setting the `BACKEND` environment variable (e.g. `os.environ["BACKEND"] = "tf"` or `"onnx"`). If you have a GPU, you can additionally install TensorFlow using:
-2
+
+### Simple case
+
+Computing text similarity is as easy as:
+
+```python
+from unisim import TextSim
+text_sim = TextSim()
+text_sim.similarity("this is a text", "This is a txt! 😀")  # 0.9113
 ```
+The higher the similarity, the more similar the strings are.
+
+Beyond this simple example UniSim supports GPU accelerated batch matching and ANN indexing for medium to large matching use-cases including: Dataset deduplication, [LLM RAG](/notebooks/unisim-gemma-text_rag_demo.ipynb), [Address lookup](/notebooks/unisim_text_demo.ipynb) and [Phishing Domains lookup](/notebooks/ct-domain-demo.ipynb).
+
+### GPU Acceleration
+By default, UniSim uses [Onnx](https://github.com/onnx/onnx) when running on CPU, and [TensorFlow](https://www.tensorflow.org/) or [Onnx GPU](https://github.com/onnx/onnx) for GPU acceleration. You can switch backends by setting the `BACKEND` environment variable (e.g. `os.environ["BACKEND"] = "tf"` or `"onnx"`). If you have a GPU, you can additionally install TensorFlow using or Onnx:
+
+```bash
 pip install unisim[tensorflow]
+```
+
+or
+
+```bash
+pip uninstall onnxruntime
+pip install onnxruntime-gpu
 ```
 
 ## Text UniSim (TextSim)
@@ -153,7 +181,7 @@ If you use the UniSim package in your work, please cite:
 }
 
 ```
-Additionally, if you use TextSim or the RETSim model, please cite the following paper: 
+Additionally, if you use TextSim or the RETSim model, please cite the following paper:
 
 ```bibtex
 @article{RETSim_2023,

@@ -41,7 +41,12 @@ if TF_AVAILABLE or get_backend() == BackendType.tf:
         set_accelerator(AcceleratorType.cpu)
 
 else:
-    set_accelerator(AcceleratorType.cpu)
+    import onnxruntime as ort
+
+    if "GPU" in ort.get_device():
+        set_accelerator(AcceleratorType.gpu)
+    else:
+        set_accelerator(AcceleratorType.cpu)
 
 # choose backend if not set by user
 accel = get_accelerator()
@@ -85,4 +90,10 @@ else:
     raise ValueError(f"Unknown backend {get_backend()}")
 
 logging.info("Loaded backend")
-logging.info("Using %s with %s", get_backend().name.upper(), get_accelerator().name.upper())
+if get_accelerator() == AcceleratorType.cpu:
+    if get_backend() == BackendType.tf:
+        logging.warning("TensorFlow is running on CPU - check CUDA installation for GPU support")
+    if get_backend() == BackendType.onnx:
+        logging.warning("ONNX is running on CPU - you need to install CUDA/onnxruntime-gpu to run on GPU")
+else:
+    logging.info("Using %s with %s", get_backend().name.upper(), get_accelerator().name.upper())

@@ -166,9 +166,9 @@ class Indexer:
 
         # for single batch lookup Matches is returned instead of BatchMatches
         if not isinstance(matches_batch, BatchMatches):
-            matches_batch = [matches_batch]
+            matches_batch = [matches_batch]  # type: ignore
 
-        for query_idx, matches in enumerate(matches_batch):
+        for query_idx, matches in enumerate(matches_batch):  # type: ignore
             result = Result(query_idx=query_idx)
             if return_data:
                 result.query_data = queries[query_idx]
