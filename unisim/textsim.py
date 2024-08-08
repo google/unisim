@@ -107,8 +107,12 @@ class TextSim(UniSim):
         return super().similarity(input1=input1, input2=input2)
 
     def match(
-        self, queries: Sequence[str], targets: Sequence[Any] | None = None, similarity_threshold: float = 0.9
-    ) -> DataFrame:
+        self,
+        queries: Sequence[Any],
+        targets: Sequence[Any] | None = None,
+        similarity_threshold: float = 0.9,
+        as_pandas_df: bool = True,
+    ) -> DataFrame | ResultCollection:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -130,7 +134,9 @@ class TextSim(UniSim):
             columns, representing each query, nearest match in `targets`, and
             their similarity value.
         """
-        return super().match(queries=queries, targets=targets, similarity_threshold=similarity_threshold)
+        return super().match(
+            queries=queries, targets=targets, similarity_threshold=similarity_threshold, as_pandas_df=as_pandas_df
+        )
 
     def embed(self, inputs: Sequence[str]) -> BatchEmbeddings:
         """Compute embeddings for input texts.
