@@ -41,7 +41,8 @@ if TF_AVAILABLE or get_backend() == BackendType.tf:
         set_accelerator(AcceleratorType.cpu)
 
 else:
-    import onnxruntime  as ort
+    import onnxruntime as ort
+
     if "GPU" in ort.get_device():
         set_accelerator(AcceleratorType.gpu)
     else:

@@ -233,10 +233,13 @@ class UniSim(ABC):
 
         return results
 
-    def match(self, queries: Sequence[Any],
-              targets: Sequence[Any] | None = None,
-              similarity_threshold: float = 0.9,
-              as_pandas_df: bool = True) -> DataFrame | ResultCollection:
+    def match(
+        self,
+        queries: Sequence[Any],
+        targets: Sequence[Any] | None = None,
+        similarity_threshold: float = 0.9,
+        as_pandas_df: bool = True,
+    ) -> DataFrame | ResultCollection:
         """Find the closest matches for queries in a list of targets and
         return the result as a pandas DataFrame.
 
@@ -280,7 +283,6 @@ class UniSim(ABC):
 
         # cleanup index
         self.reset_index()
-
 
         # return results as a raw ResultCollection or pandas DataFrame
         if not as_pandas_df:

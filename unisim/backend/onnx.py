@@ -35,6 +35,7 @@ if "CUDAExecutionProvider" in avail_providers:
 else:
     _providers = ["CPUExecutionProvider"]
 
+
 def load_model(path: Path, verbose: int = 0) -> Dict[str, Any]:
     """Helper function to load Onnx model.
 
