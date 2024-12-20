@@ -346,7 +346,7 @@ class UniSim(ABC):
 
         # Save data if requested
         if self.store_data:
-            with open(f"{prefix}.data", "w") as f:
+            with open(f"{prefix}.data", "w", encoding="utf-8") as f:
                 json.dump(self.indexed_data, f)
 
     def load(self, prefix: str) -> None:
@@ -378,5 +378,5 @@ class UniSim(ABC):
 
         # Load data if requested
         if self.store_data:
-            with open(f"{prefix}.data", "r") as f:
+            with open(f"{prefix}.data", "r", encoding="utf-8") as f:
                 self.indexed_data = json.load(f)
