@@ -4,6 +4,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import json
 import logging
 from abc import ABC
 from typing import Any, Dict, List, Sequence
@@ -321,3 +322,61 @@ class UniSim(ABC):
         print(f"|-use_accelerator: {self.use_accelerator}")
         print(f"|-store index data: {self.store_data}")
         print(f"|-return embeddings: {self.return_embeddings}")
+
+    def save(self, prefix: str) -> None:
+        """Save UniSim state to disk using the given filename prefix.
+
+        For exact indexing:
+            - Saves embeddings to {prefix}.embeddings as numpy array
+
+        For approx indexing:
+            - Saves index to {prefix}.usearch using USearch format
+
+        If store_data=True, saves data to {prefix}.data as JSON
+
+        Args:
+            prefix: Filename prefix for saved state files
+        """
+        # Save embeddings/index
+        if self.index_type == IndexerType.exact:
+            embeddings = np.array(self.indexer.embeddings)
+            np.save(f"{prefix}.embeddings", embeddings)
+        elif self.index_type == IndexerType.approx:
+            self.indexer.index.save(f"{prefix}.usearch")
+
+        # Save data if requested
+        if self.store_data:
+            with open(f"{prefix}.data", "w") as f:
+                json.dump(self.indexed_data, f)
+
+    def load(self, prefix: str) -> None:
+        """Load UniSim state from disk using the given filename prefix.
+
+        For exact indexing:
+            - Loads embeddings from {prefix}.embeddings as numpy array
+
+        For approx indexing:
+            - Loads index from {prefix}.usearch using USearch format
+
+        If store_data=True, loads data from {prefix}.data as JSON
+
+        Args:
+            prefix: Filename prefix for saved state files
+        """
+        self.reset_index()
+
+        # Load embeddings/index
+        if self.index_type == IndexerType.exact:
+            embeddings = np.load(f"{prefix}.embeddings.npy")
+            for i in range(0, len(embeddings), self.batch_size):
+                batch = embeddings[i : i + self.batch_size]
+                self.indexer.add(batch, list(range(i, i + len(batch))))
+            self.index_size = len(embeddings)
+        elif self.index_type == IndexerType.approx:
+            self.indexer.index.load(f"{prefix}.usearch")
+            self.index_size = self.indexer.index.size
+
+        # Load data if requested
+        if self.store_data:
+            with open(f"{prefix}.data", "r") as f:
+                self.indexed_data = json.load(f)
