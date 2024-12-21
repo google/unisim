@@ -32,6 +32,8 @@ def cosine_similarity(query_embeddings: BatchEmbeddings, index_embeddings: Batch
 avail_providers = get_available_providers()
 if "CUDAExecutionProvider" in avail_providers:
     _providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+elif "CoreMLExecutionProvider" in avail_providers:
+    _providers = ["CoreMLExecutionProvider", "CPUExecutionProvider"]
 else:
     _providers = ["CPUExecutionProvider"]
 
