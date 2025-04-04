@@ -1,4 +1,5 @@
 # UniSim: Universal Similarity
+_NOTE (4/3/2025): This repository has been archived and no longer actively maintained._
 
 UniSim is a package for efficiently computing similarity, performing fuzzy matching, deduplicating datasets, and clustering data (text and images). The UniSim package is in beta and currently supports text (e.g. for fuzzy string matching) and image support will be added soon.
 
